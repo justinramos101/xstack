@@ -1,0 +1,16 @@
+{
+	"name": "xstack",
+	"owner": {
+		"name": "Justin Ramos"
+	},
+	"plugins": [
+		{
+			"name": "xstack",
+			"source": "./",
+			"description": "pstack's rigorous agent workflows, ported to Claude Code and Codex."
+		}
+	],
+	"metadata": {
+		"description": "xstack engineering workflows for Claude Code and Codex, ported from pstack."
+	}
+}

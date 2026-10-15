@@ -976,6 +976,9 @@ interface ForgePullRequestQuery {
   readonly headField: string;
   readonly baseField: string;
   readonly states: ReadonlyMap<string, FrontierPrState>;
+  // Marks a PR whose head lives in a fork. --head matches the branch name
+  // alone, so a fork branch with the same name would otherwise match.
+  readonly forkField?: string;
 }
 
 const FORGE_PULL_REQUEST_QUERIES: Readonly<
@@ -990,6 +993,7 @@ const FORGE_PULL_REQUEST_QUERIES: Readonly<
       ["MERGED", "MERGED"],
       ["CLOSED", "CLOSED"],
     ]),
+    forkField: "isCrossRepository",
   },
   origin: {
     stateField: "status",
@@ -1066,9 +1070,13 @@ function listPullRequests({
       "--state",
       "all",
       "--json",
-      ["number", query.stateField, query.headField, query.baseField].join(
-        ","
-      ),
+      [
+        "number",
+        query.stateField,
+        query.headField,
+        query.baseField,
+        ...(query.forkField === undefined ? [] : [query.forkField]),
+      ].join(","),
     ],
     repo,
   });
@@ -1081,12 +1089,18 @@ function listPullRequests({
   if (!isUnknownArray(value)) {
     throw new UserError(`${command} output is not a JSON array`);
   }
-  return value.map((row) => {
+  const rows = value.map((row) => {
     const status = isRecord(row) ? row[query.stateField] : undefined;
     const state =
       typeof status === "string" ? (query.states.get(status) ?? null) : null;
     const head = isRecord(row) ? row[query.headField] : undefined;
     const base = isRecord(row) ? row[query.baseField] : undefined;
+    const fork =
+      query.forkField === undefined
+        ? false
+        : isRecord(row)
+          ? row[query.forkField]
+          : undefined;
     if (
       !isRecord(row) ||
       typeof row.number !== "number" ||
@@ -1096,12 +1110,16 @@ function listPullRequests({
       typeof head !== "string" ||
       head.length === 0 ||
       typeof base !== "string" ||
-      base.length === 0
+      base.length === 0 ||
+      typeof fork !== "boolean"
     ) {
       throw new UserError(`${command} output has an invalid PR row`);
     }
-    return { pr: row.number, state, branch: head, base };
+    return { pr: row.number, state, branch: head, base, fork };
   });
+  return rows
+    .filter((row) => !row.fork)
+    .map(({ pr, state, branch, base }) => ({ pr, state, branch, base }));
 }
 
 function branchPullRequest({

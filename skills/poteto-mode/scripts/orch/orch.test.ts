@@ -123,17 +123,19 @@ const FORGE_FIXTURES: Readonly<
         state: FixtureState;
         head: string;
         base: string;
+        fork?: boolean;
       }) => Record<string, unknown>;
     }
   >
 > = {
   gh: {
-    fields: "number,state,headRefName,baseRefName",
-    row: ({ number, state, head, base }) => ({
+    fields: "number,state,headRefName,baseRefName,isCrossRepository",
+    row: ({ number, state, head, base, fork }) => ({
       number,
       state: state === "draft" ? "OPEN" : state.toUpperCase(),
       headRefName: head,
       baseRefName: base,
+      isCrossRepository: fork ?? false,
     }),
   },
   origin: {
@@ -154,6 +156,7 @@ function forgeRows(
     state: FixtureState;
     head: string;
     base: string;
+    fork?: boolean;
   }[]
 ): string {
   return JSON.stringify(prs.map((pr) => FORGE_FIXTURES[forge].row(pr)));
@@ -647,6 +650,24 @@ describe("Store", () => {
       operation: async () => {
         const frontier = await store.frontier.set({ repo: stack.repo });
         expect(frontier.prs.map((row) => row.pr)).toEqual([10, 13, 12, 14]);
+      },
+    });
+  });
+
+  it("ignores a fork pull request whose head has the same branch name", async () => {
+    const { directory, store } = await initializedStore();
+    const stack = await makeGitStack(directory);
+
+    await withFakeForge({
+      directory,
+      forge: "gh",
+      currentRows: forgeRows("gh", [
+        { number: 20, state: "open", head: "stack/open", base: "main", fork: true },
+        { number: 11, state: "open", head: "stack/open", base: "stack/closed" },
+      ]),
+      operation: async () => {
+        const frontier = await store.frontier.set({ repo: stack.repo });
+        expect(frontier.prs.map((row) => row.pr)).toEqual([10, 13, 11, 14]);
       },
     });
   });

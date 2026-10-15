@@ -168,6 +168,7 @@ export interface ResolveGateParams {
 export interface SetFrontierParams {
   readonly repo: string;
   readonly forge?: Forge;
+  readonly trunk?: string;
   readonly prs?: readonly number[];
 }
 
@@ -1181,8 +1182,15 @@ function trunkBranch(repo: string): string {
   }
 }
 
-function resolveFrontier(repo: string, forge: Forge): readonly FrontierPr[] {
-  const trunk = trunkBranch(repo);
+function resolveFrontier({
+  repo,
+  forge,
+  trunk,
+}: {
+  repo: string;
+  forge: Forge;
+  trunk: string;
+}): readonly FrontierPr[] {
   const current = currentBranch(repo);
   if (current === trunk) {
     return [];
@@ -1554,6 +1562,10 @@ export function openStore(
         await beginWrite();
         const repo = resolve(requiredLine(params.repo, "repo directory"));
         const forge = parseForge(params.forge ?? "gh");
+        const trunk =
+          params.trunk === undefined
+            ? trunkBranch(repo)
+            : requiredLine(params.trunk, "trunk branch");
         const pin =
           params.prs === undefined
             ? undefined
@@ -1562,7 +1574,7 @@ export function openStore(
           throw new UserError("--prs must not contain duplicates");
         }
         const old = await readFrontier(store);
-        const prs = resolveFrontier(repo, forge);
+        const prs = resolveFrontier({ repo, forge, trunk });
         if (pin !== undefined) {
           validateFrontierPin({
             actual: prs.map((row) => row.pr),

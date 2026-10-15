@@ -592,6 +592,27 @@ describe("Store", () => {
     });
   }
 
+  it("stops the base chain at an explicit trunk branch", async () => {
+    const { directory, store } = await initializedStore();
+    const stack = await makeGitStack(directory);
+
+    await withFakeForge({
+      directory,
+      forge: "gh",
+      operation: async () => {
+        const frontier = await store.frontier.set({
+          repo: stack.repo,
+          trunk: "stack/merged",
+        });
+        expect(frontier.prs.map((row) => row.pr)).toEqual([13, 11, 14]);
+        expect(frontier.lowestUnmerged).toBe(11);
+        await expect(
+          store.frontier.set({ repo: stack.repo, trunk: " " })
+        ).rejects.toThrow("trunk branch must not be empty");
+      },
+    });
+  });
+
   it("names the missing pull request when a chain branch has none", async () => {
     const { directory, store } = await initializedStore();
     const stack = await makeGitStack(directory);
@@ -662,6 +683,7 @@ describe("orch CLI", () => {
     expect(frontierHelp.code).toBe(0);
     expect(frontierHelp.stdout).toContain("--repo <dir>");
     expect(frontierHelp.stdout).toContain("--forge <forge>");
+    expect(frontierHelp.stdout).toContain("--trunk <branch>");
     expect(frontierHelp.stdout).toContain("--prs <n,...>");
 
     const directory = await makeDirectory();

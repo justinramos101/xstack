@@ -31,10 +31,21 @@ git rev-parse --git-dir >/dev/null 2>&1 || { echo "error: not a git repo: $repo"
 # Main worktree is the first entry; everything else is a candidate.
 main_wt=$(git worktree list --porcelain | awk '/^worktree /{print substr($0, 10); exit}')
 
-if [ -z "$base" ]; then
+discover_base() {
 	for cand in "$(git symbolic-ref --short refs/remotes/origin/HEAD 2>/dev/null)" origin/main origin/master; do
-		[ -n "$cand" ] && git rev-parse --verify --quiet "$cand^{commit}" >/dev/null && { base="$cand"; break; }
+		[ -n "$cand" ] && git rev-parse --verify --quiet "$cand^{commit}" >/dev/null && { base="$cand"; return; }
 	done
+}
+
+if [ -z "$base" ]; then
+	discover_base
+	# A checkout without remote-tracking refs (init, then add origin) can still
+	# fetch them, so try once before giving up.
+	if [ -z "$base" ] && git remote get-url origin >/dev/null 2>&1; then
+		git fetch origin --quiet 2>/dev/null
+		git remote set-head origin --auto >/dev/null 2>&1
+		discover_base
+	fi
 	[ -z "$base" ] && { echo "error: no base ref (origin/HEAD, origin/main, origin/master all missing); pass -b <ref>" >&2; exit 1; }
 	echo "warn: no -b given; MERGED checks against $base" >&2
 fi

@@ -106,14 +106,14 @@ test('worktree audit handles spaced paths and does not call a closed PR safe', (
     const env = { ...process.env, PATH: `${bin}:${process.env.PATH}`, XSTACK_TRANSCRIPTS_DIR: transcripts };
     const result = spawnSync('bash', [new URL('../skills/poteto-mode/scripts/worktree-audit.sh', import.meta.url).pathname, repo], { env, encoding: 'utf8' });
     assert.equal(result.status, 0, result.stderr);
-    const columns = result.stdout.trim().split('\n')[1].split('\t');
+    const columns = result.stdout.trim().split('\n')[2].split('\t');
     assert.equal(columns[7], 'review');
     assert.equal(columns[5], '#42/CLOSED');
     assert.equal(columns[8], realpathSync(worktree));
     delete env.XSTACK_TRANSCRIPTS_DIR;
     const unknown = spawnSync('bash', [new URL('../skills/poteto-mode/scripts/worktree-audit.sh', import.meta.url).pathname, repo], { env, encoding: 'utf8' });
     assert.equal(unknown.status, 0, unknown.stderr);
-    assert.equal(unknown.stdout.trim().split('\n')[1].split('\t')[7], 'review-chat-unknown');
+    assert.equal(unknown.stdout.trim().split('\n')[2].split('\t')[7], 'review-chat-unknown');
   } finally { rmSync(dir, { recursive: true, force: true }); }
 });
 
@@ -139,7 +139,7 @@ test('merged worktree stays unknown when transcript scanning cannot complete', (
         env: { ...process.env, PATH: `${bin}:${process.env.PATH}`, XSTACK_TRANSCRIPTS_DIR: transcripts }, encoding: 'utf8',
       });
       assert.equal(result.status, 0, result.stderr);
-      const columns = result.stdout.trim().split('\n')[1].split('\t');
+      const columns = result.stdout.trim().split('\n')[2].split('\t');
       assert.equal(columns[2], 'YES');
       return { columns, stderr: result.stderr };
     };

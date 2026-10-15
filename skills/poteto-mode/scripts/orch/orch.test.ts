@@ -613,6 +613,63 @@ describe("Store", () => {
     });
   });
 
+  it("picks the live pull request when a branch name was reused", async () => {
+    const { directory, store } = await initializedStore();
+    const stack = await makeGitStack(directory);
+    const reused = [
+      { number: 9, state: "merged", head: "stack/open", base: "main" },
+      { number: 11, state: "open", head: "stack/open", base: "stack/closed" },
+      { number: 7, state: "closed", head: "stack/open", base: "main" },
+    ] as const;
+
+    await withFakeForge({
+      directory,
+      forge: "gh",
+      currentRows: forgeRows("gh", [...reused]),
+      operation: async () => {
+        const frontier = await store.frontier.set({ repo: stack.repo });
+        expect(frontier.prs.map((row) => row.pr)).toEqual([10, 13, 11, 14]);
+      },
+    });
+  });
+
+  it("takes the newest pull request when none on a reused branch is open", async () => {
+    const { directory, store } = await initializedStore();
+    const stack = await makeGitStack(directory);
+
+    await withFakeForge({
+      directory,
+      forge: "gh",
+      currentRows: forgeRows("gh", [
+        { number: 7, state: "closed", head: "stack/open", base: "main" },
+        { number: 12, state: "merged", head: "stack/open", base: "stack/closed" },
+      ]),
+      operation: async () => {
+        const frontier = await store.frontier.set({ repo: stack.repo });
+        expect(frontier.prs.map((row) => row.pr)).toEqual([10, 13, 12, 14]);
+      },
+    });
+  });
+
+  it("rejects a branch with more than one open pull request", async () => {
+    const { directory, store } = await initializedStore();
+    const stack = await makeGitStack(directory);
+
+    await withFakeForge({
+      directory,
+      forge: "gh",
+      currentRows: forgeRows("gh", [
+        { number: 11, state: "open", head: "stack/open", base: "stack/closed" },
+        { number: 16, state: "draft", head: "stack/open", base: "stack/closed" },
+      ]),
+      operation: async () => {
+        await expect(store.frontier.set({ repo: stack.repo })).rejects.toThrow(
+          "branch stack/open has multiple open pull requests (#11, #16)"
+        );
+      },
+    });
+  });
+
   it("names the missing pull request when a chain branch has none", async () => {
     const { directory, store } = await initializedStore();
     const stack = await makeGitStack(directory);

@@ -1,0 +1,21 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+  "name": "xstack",
+  "version": "0.4.0",
+  "description": "pstack's rigorous agent workflows, ported to Claude Code and Codex. Write less, but higher quality code.",
+  "author": {
+    "name": "Justin Ramos"
+  },
+  "homepage": "https://github.com/justinramos101/Xstack",
+  "repository": "https://github.com/justinramos101/Xstack",
+  "license": "MIT",
+  "keywords": [
+    "xstack",
+    "pstack",
+    "poteto-mode",
+    "workflow",
+    "principles",
+    "subagents",
+    "unslop"
+  ]
+}

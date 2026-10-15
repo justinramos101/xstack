@@ -111,6 +111,12 @@ export type GitHubMergeAllowed =
       readonly basis: "rollup";
       readonly mergeStateStatus: "BLOCKED";
       readonly headRollupState: Exclude<RollupState, "ERROR" | "FAILURE">;
+    }
+  | {
+      readonly kind: "allowed";
+      readonly basis: "owner-gate";
+      readonly mergeStateStatus: "BLOCKED";
+      readonly headRollupState: "FAILURE";
     };
 export type GitHubMergeAssessment = GitHubMergeAllowed | GitHubMergeRefusal;
 interface CiBase {
@@ -379,6 +385,15 @@ export interface RollupPage {
   readonly checks: readonly Check[];
   readonly endCursor: string | null;
 }
+export interface RawReviewThread {
+  readonly id: string;
+  readonly firstComment: ReviewComment | null;
+  readonly resolved: boolean;
+}
+export interface ReviewThreadPage {
+  readonly threads: readonly RawReviewThread[];
+  readonly endCursor: string | null;
+}
 export interface GitHubReader {
   originRepo(): Promise<Repository | null>;
   currentPr(pr: PrNumber | null): Promise<PrContext>;
@@ -389,7 +404,10 @@ export interface GitHubReader {
     context: PrContext,
     after: string | null
   ): Promise<RollupPage>;
-  reviewThreads(context: PrContext): Promise<readonly ReviewThread[]>;
+  reviewThreadPage(
+    context: PrContext,
+    after: string | null
+  ): Promise<ReviewThreadPage>;
   commitRollups(context: PrContext): Promise<readonly CommitRollup[]>;
 }
 export interface PollingOptions {

@@ -90,6 +90,47 @@ describe("readiness truth table", () => {
   });
 });
 
+describe("owner-approval gate in the merge assessment", () => {
+  it("does not read the gate's rolled-up FAILURE as a GitHub CI refusal", async () => {
+    const reader = fakeReader({
+      facts: { mergeStateStatus: "BLOCKED" },
+      fastPath: {
+        kind: "checks",
+        checks: [
+          passingCheck(),
+          {
+            kind: "code-review-gate",
+            name: "Code Review Gate",
+            reportedState: "ACTION_REQUIRED",
+            description: "",
+            link: "",
+            workflow: "",
+          },
+        ],
+      },
+      commitRollups: [{ oid: "head", state: "FAILURE" }],
+    });
+    const snapshot = await readSnapshot({
+      reader,
+      context: context(1),
+      pendingHistory: "include",
+      allowDraft: false,
+    });
+    if (snapshot.kind !== "open") throw new Error("expected open snapshot");
+    expect(snapshot.ci.kind).toBe("ci-clean");
+  });
+
+  it("still refuses an ERROR rollup next to the gate", () => {
+    expect(
+      assessGitHubMerge({
+        mergeStateStatus: "BLOCKED",
+        headRollupState: "ERROR",
+        gateAwaitsOwner: true,
+      }).kind
+    ).toBe("refused");
+  });
+});
+
 describe("snapshot query planning", () => {
   it("does not query commit rollups while queued checks are pending", async () => {
     const reader = fakeReader({
@@ -106,7 +147,7 @@ describe("snapshot query planning", () => {
     expect(snapshot.ci.kind).toBe("ci-pending");
     expect(reader.calls).toEqual([
       "pullRequest",
-      "reviewThreads",
+      "reviewThreadPage:null",
       "checksFastPath",
     ]);
   });

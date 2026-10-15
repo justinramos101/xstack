@@ -7,8 +7,9 @@ xstack is a port of [pstack](https://github.com/cursor/plugins/tree/main/pstack)
 ## What you get
 
 - **`/poteto-mode`, the front door.** Give it a task and it matches one of 23 playbooks, such as bug fix, feature, refactoring, investigation, or opening a PR. It then runs the other skills as the steps need them. The name comes from Lauren Tan's GitHub handle, poteto. The skill captures her working style, and you can [generate your own](docs/guide/09-make-it-yours.md).
-- **Skills you call directly.** `/how` and `/why` explain code and its history. `/architect`, `/arena`, and `/interrogate` design and stress-test a change. `/tdd`, `/unslop`, and `/no-comments` build and clean it. There are 47 skills in total.
-- **23 named principles.** Rules such as Prove It Works and Subtract Before You Add. The agent applies them on its own and you can steer it by naming one.
+- **Skills you call directly.** `/how` and `/why` explain code and its history. `/architect`, `/arena`, and `/interrogate` design and stress-test a change. `/tdd`, `/unslop`, and `/no-comments` build and clean it. `/benchmark-checklist` vets a measured speedup or regression before you report it. There are 54 skills in total.
+- **Skills that help you steer.** `/poteto-help` finds the skill, playbook, or principle that fits what you're trying to do and hands you a prompt to type. `/in-your-own-words` has the agent play back your goal and the problem before it starts. `/sharpen` aims a task at what you're really after, the way a top expert would approach it. `/ketchup` sums up what changed in a long chat since your last message. `/correct` mines your history for mistakes you keep correcting and fixes each one where it can be enforced, such as types, lint, CI, or tests, before falling back to docs.
+- **24 named principles.** Rules such as Prove It Works, Subtract Before You Add, and Explain the Number. The agent applies them on its own and you can steer it by naming one.
 - **Benny, an optional Slack bot.** It triages issue reports and tries to reproduce them. It is dormant until you [set it up](automations/benny/README.md). Installing xstack turns on no automation.
 
 ## Install
@@ -43,7 +44,7 @@ For a skill-only install, copy skill folders into `.agents/skills/` or `~/.agent
 /poteto-mode the export writes duplicate rows when a retry lands mid-run. repro first, then fix and verify.
 ```
 
-Claude Code invokes skills as slash commands. Codex also accepts `$skill-name`. The [guide](docs/guide/README.md) walks through a first task, verification, and overnight runs, and has a [glossary](docs/guide/README.md#glossary) for the terms the workflows use.
+Invoke `poteto-mode` by name with your task in the same message, so the skill is attached to it. Claude Code invokes skills as slash commands. Codex also accepts `$poteto-mode`, or any `$skill-name`. Stuck, or unsure which skill fits? Run `/poteto-help`. The [guide](docs/guide/README.md) walks through a first task, verification, and overnight runs, and has a [glossary](docs/guide/README.md#glossary) for the terms the workflows use.
 
 ## What each workflow needs
 
@@ -53,7 +54,7 @@ Most of xstack needs nothing beyond git and your host. A few workflows lean on o
 | --- | --- |
 | Open pull requests | GitHub CLI (`gh`), logged in. If the [Origin](https://cursor.com/docs/origin) CLI is installed and can resolve the repository, the PR workflows use it instead of `gh`. |
 | Babysit or ship pull requests on GitHub | `gh` plus [Bun](https://bun.sh), which runs the bundled PR watcher. On Origin the workflows call the `origin` CLI directly and need no Bun. |
-| Run the Orchestrate playbook, a multi-day program with many stacked PRs | [Graphite](https://graphite.dev) (`gt`) and Bun. Orchestrate reads the order of a PR stack from Graphite and keeps its bookkeeping with a bundled Bun script. No other workflow needs Graphite. |
+| Run the Orchestrate playbook, a multi-day program with many stacked PRs | `gh`, or the `origin` CLI on Origin, plus Bun. Orchestrate reads the order of a PR stack by walking the PR base chain through the forge, and keeps its bookkeeping with a bundled Bun script. No workflow needs Graphite. |
 | Leave a task running overnight | A scheduler or watcher that survives the session. Claude Code has `/loop`. Without a persistent runner, the loop stops when the session ends. |
 | Verify a change in a UI | A way to drive the app: a browser, a native-app driver, or a CLI. `/create-verification-skill` writes one for your project. |
 | Run Benny | A Slack app, an event runner, credentials, and your explicit authorization. See the [Benny README](automations/benny/README.md). |
@@ -69,7 +70,7 @@ node --test scripts/*.test.mjs
 cd skills/poteto-mode/scripts && bun install --frozen-lockfile && bun run test && bun run typecheck
 ```
 
-A release is a version bump in both plugin manifests, `.claude-plugin/plugin.json` and `.codex-plugin/plugin.json`.
+A release is a version bump in all three plugin manifests: `plugin.json`, `.claude-plugin/plugin.json`, and `.codex-plugin/plugin.json`.
 
 ## License
 

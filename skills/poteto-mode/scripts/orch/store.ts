@@ -979,9 +979,6 @@ interface ForgePullRequestQuery {
   // Marks a PR whose head lives in a fork. --head matches the branch name
   // alone, so a fork branch with the same name would otherwise match.
   readonly forkField?: string;
-  // Arguments that lift the CLI's default page size. gh returns 30 rows unless
-  // told otherwise, and --state all includes every historical PR.
-  readonly limitArgs: readonly string[];
 }
 
 const FORGE_PULL_REQUEST_QUERIES: Readonly<
@@ -997,7 +994,6 @@ const FORGE_PULL_REQUEST_QUERIES: Readonly<
       ["CLOSED", "CLOSED"],
     ]),
     forkField: "isCrossRepository",
-    limitArgs: ["--limit", "1000"],
   },
   origin: {
     stateField: "status",
@@ -1009,7 +1005,6 @@ const FORGE_PULL_REQUEST_QUERIES: Readonly<
       ["merged", "MERGED"],
       ["closed", "CLOSED"],
     ]),
-    limitArgs: [],
   },
 };
 
@@ -1064,7 +1059,8 @@ function listPullRequests({
   const query = FORGE_PULL_REQUEST_QUERIES[forge];
   const command = `${forge} pr list ${filter} ${branch}`;
   // Every state is fetched because a merged or closed PR still anchors the
-  // chain, and a draft counts as OPEN.
+  // chain, and a draft counts as OPEN. Both CLIs default to 30 rows, which
+  // all-state history can exceed.
   const raw = runTool({
     command: forge,
     args: [
@@ -1074,7 +1070,8 @@ function listPullRequests({
       branch,
       "--state",
       "all",
-      ...query.limitArgs,
+      "--limit",
+      "1000",
       "--json",
       [
         "number",

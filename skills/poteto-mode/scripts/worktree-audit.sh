@@ -64,7 +64,7 @@ git rev-parse --verify --quiet "$base^{commit}" >/dev/null 2>&1 || { echo "error
 # neither can.
 prs=$(mktemp)
 if command -v origin >/dev/null 2>&1 \
-	&& raw=$(origin pr list --author "@me" --state all --limit 1000 \
+	&& raw=$(origin pr list --mine --state all --limit 1000 \
 		--json number,status,headRef 2>/dev/null); then
 	printf '%s' "$raw" | jq '[.[] | {number, state: (.status | ascii_upcase), head: .headRef}]' > "$prs" 2>/dev/null
 elif raw=$(gh pr list --author "@me" --state all --limit 1000 \

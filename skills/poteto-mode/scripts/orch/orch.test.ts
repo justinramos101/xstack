@@ -118,7 +118,6 @@ const FORGE_FIXTURES: Readonly<
     Forge,
     {
       readonly fields: string;
-      readonly limit: string;
       readonly row: (pr: {
         number: number;
         state: FixtureState;
@@ -131,7 +130,6 @@ const FORGE_FIXTURES: Readonly<
 > = {
   gh: {
     fields: "number,state,headRefName,baseRefName,isCrossRepository",
-    limit: "--limit 1000 ",
     row: ({ number, state, head, base, fork }) => ({
       number,
       state: state === "draft" ? "OPEN" : state.toUpperCase(),
@@ -142,7 +140,6 @@ const FORGE_FIXTURES: Readonly<
   },
   origin: {
     fields: "number,status,headRef,baseRef",
-    limit: "",
     row: ({ number, state, head, base }) => ({
       number,
       status: state,
@@ -193,9 +190,9 @@ async function withFakeForge<T>({
       ])
     }\n`
   );
-  const { fields, limit } = FORGE_FIXTURES[forge];
+  const { fields } = FORGE_FIXTURES[forge];
   const list = (filter: string, branch: string): string =>
-    `pr list ${filter} ${branch} --state all ${limit}--json ${fields}`;
+    `pr list ${filter} ${branch} --state all --limit 1000 --json ${fields}`;
   const fake = join(bin, forge);
   await writeFile(
     fake,

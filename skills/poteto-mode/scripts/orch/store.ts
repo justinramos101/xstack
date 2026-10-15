@@ -1118,11 +1118,22 @@ function listPullRequests({
     ) {
       throw new UserError(`${command} output has an invalid PR row`);
     }
-    return { pr: row.number, state, branch: head, base, fork };
+    return {
+      pr: row.number,
+      state,
+      branch: shortBranch(head),
+      base: shortBranch(base),
+      fork,
+    };
   });
   return rows
     .filter((row) => !row.fork)
     .map(({ pr, state, branch, base }) => ({ pr, state, branch, base }));
+}
+
+// Origin accepts and may return fully qualified refs, so compare short names.
+function shortBranch(ref: string): string {
+  return ref.replace(/^(refs\/)?heads\//, "");
 }
 
 function branchPullRequest({
@@ -1591,7 +1602,7 @@ export function openStore(
         const trunk =
           params.trunk === undefined
             ? trunkBranch(repo)
-            : requiredLine(params.trunk, "trunk branch");
+            : shortBranch(requiredLine(params.trunk, "trunk branch"));
         const pin =
           params.prs === undefined
             ? undefined

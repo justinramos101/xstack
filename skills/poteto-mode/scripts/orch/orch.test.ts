@@ -672,6 +672,30 @@ describe("Store", () => {
     });
   });
 
+  it("compares fully qualified Origin refs by their short branch name", async () => {
+    const { directory, store } = await initializedStore();
+    const stack = await makeGitStack(directory);
+
+    await withFakeForge({
+      directory,
+      forge: "origin",
+      currentRows: forgeRows("origin", [
+        { number: 11, state: "open", head: "refs/heads/stack/open", base: "refs/heads/stack/closed" },
+      ]),
+      operation: async () => {
+        const frontier = await store.frontier.set({
+          repo: stack.repo,
+          forge: "origin",
+          trunk: "refs/heads/stack/closed",
+        });
+        expect(frontier.prs.map((row) => [row.pr, row.branches])).toEqual([
+          [11, "stack/open"],
+          [14, "stack/draft"],
+        ]);
+      },
+    });
+  });
+
   it("rejects a branch with more than one open pull request", async () => {
     const { directory, store } = await initializedStore();
     const stack = await makeGitStack(directory);

@@ -8,8 +8,18 @@ import { nonEmpty } from "./types.ts";
 export function assessGitHubMerge(args: {
   readonly mergeStateStatus: T.MergeStateStatus;
   readonly headRollupState: T.RollupState;
+  // A Code Review Gate waiting on an owner approval concludes ACTION_REQUIRED,
+  // which GitHub rolls up as FAILURE. That failure is the exempt gate, not CI.
+  readonly gateAwaitsOwner?: boolean;
 }): T.GitHubMergeAssessment {
   if (args.mergeStateStatus === "BLOCKED") {
+    if (args.headRollupState === "FAILURE" && args.gateAwaitsOwner === true)
+      return {
+        kind: "allowed",
+        basis: "owner-gate",
+        mergeStateStatus: args.mergeStateStatus,
+        headRollupState: args.headRollupState,
+      };
     if (args.headRollupState === "ERROR" || args.headRollupState === "FAILURE")
       return {
         kind: "refused",
@@ -32,7 +42,8 @@ export function assessGitHubMerge(args: {
 }
 async function mergeAssessment(
   reader: T.GitHubReader,
-  facts: T.PullRequestFacts
+  facts: T.PullRequestFacts,
+  gateAwaitsOwner: boolean
 ) {
   const commits = await reader.commitRollups(facts.context);
   const headRollupState =
@@ -47,6 +58,7 @@ async function mergeAssessment(
     github: assessGitHubMerge({
       mergeStateStatus: facts.mergeStateStatus,
       headRollupState,
+      gateAwaitsOwner,
     }),
   };
 }
@@ -90,7 +102,12 @@ export async function readSnapshot(args: {
       hadPreviousPassingCi: false,
     };
   else {
-    const merge = await mergeAssessment(args.reader, facts);
+    const gateAwaitsOwner = checks.checks.some(
+      (check) =>
+        check.kind === "code-review-gate" &&
+        check.reportedState === "ACTION_REQUIRED"
+    );
+    const merge = await mergeAssessment(args.reader, facts, gateAwaitsOwner);
     const base = {
       source: checks.source,
       all: checks.checks,

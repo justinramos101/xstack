@@ -979,6 +979,9 @@ interface ForgePullRequestQuery {
   // Marks a PR whose head lives in a fork. --head matches the branch name
   // alone, so a fork branch with the same name would otherwise match.
   readonly forkField?: string;
+  // Arguments that lift the CLI's default page size. gh returns 30 rows unless
+  // told otherwise, and --state all includes every historical PR.
+  readonly limitArgs: readonly string[];
 }
 
 const FORGE_PULL_REQUEST_QUERIES: Readonly<
@@ -994,6 +997,7 @@ const FORGE_PULL_REQUEST_QUERIES: Readonly<
       ["CLOSED", "CLOSED"],
     ]),
     forkField: "isCrossRepository",
+    limitArgs: ["--limit", "1000"],
   },
   origin: {
     stateField: "status",
@@ -1005,6 +1009,7 @@ const FORGE_PULL_REQUEST_QUERIES: Readonly<
       ["merged", "MERGED"],
       ["closed", "CLOSED"],
     ]),
+    limitArgs: [],
   },
 };
 
@@ -1069,6 +1074,7 @@ function listPullRequests({
       branch,
       "--state",
       "all",
+      ...query.limitArgs,
       "--json",
       [
         "number",

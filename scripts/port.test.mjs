@@ -51,6 +51,91 @@ test('model resolver CLI reads a config from an arbitrary working directory', ()
     assert.deepEqual(JSON.parse(result.stdout).entries, [{ model: 'alpha', effort: 'high' }]);
   } finally { rmSync(dir, { recursive: true, force: true }); }
 });
+const models = new URL('../skills/setup-xstack/scripts/models.mjs', import.meta.url).pathname;
+function modelsCli(home, args, input) {
+  const env = { ...process.env, HOME: home, CODEX_HOME: join(home, 'codex-home') };
+  return spawnSync(process.execPath, [models, ...args], { env, input, encoding: 'utf8' });
+}
+
+test('write puts Claude roles in an always-loaded rule and resolves them back', () => {
+  const home = mkdtempSync(join(tmpdir(), 'xstack-home-'));
+  try {
+    const draft = '# budget: medium\nfeature, refactoring: opus @ max\nhow critics: old\nswarm workers: inherit-parent\n';
+    const written = modelsCli(home, ['write', 'claude'], draft);
+    assert.equal(written.status, 0, written.stderr);
+    const rule = readFileSync(join(home, '.claude', 'rules', 'xstack-models.md'), 'utf8');
+    assert.match(rule, /^# budget: medium \(caps each entry's effort at high/m);
+    assert.match(rule, /^feature: opus @ max$/m);
+    assert.doesNotMatch(rule, /how critics/);
+    const resolved = modelsCli(home, ['claude', 'feature']);
+    assert.deepEqual(JSON.parse(resolved.stdout).entries, [{ model: 'opus', effort: 'high' }]);
+  } finally { rmSync(home, { recursive: true, force: true }); }
+});
+
+test('write keeps the rest of Codex AGENTS.md byte for byte and replaces only its block', () => {
+  const home = mkdtempSync(join(tmpdir(), 'xstack-home-'));
+  try {
+    const agents = join(home, 'codex-home', 'AGENTS.md');
+    mkdirSync(join(home, 'codex-home'));
+    const before = '# My rules\n\nAlways run tests.\n';
+    writeFileSync(agents, before);
+    assert.equal(modelsCli(home, ['write', 'codex'], 'feature: gpt-6.1-sol @ high\n').status, 0);
+    assert.equal(modelsCli(home, ['write', 'codex'], 'feature: gpt-6-astra @ xhigh\n').status, 0);
+    const text = readFileSync(agents, 'utf8');
+    assert.ok(text.startsWith(`${before}\n<!-- xstack-models:start -->\n`));
+    assert.equal(text.split('xstack-models:start').length, 2);
+    assert.match(text, /^feature: gpt-6-astra @ xhigh$/m);
+    assert.doesNotMatch(text, /gpt-6\.1-sol/);
+    assert.deepEqual(JSON.parse(modelsCli(home, ['codex', 'feature']).stdout).entries, [{ model: 'gpt-6-astra', effort: 'xhigh' }]);
+    writeFileSync(agents, `${text}<!-- xstack-models:start -->\n`);
+    const broken = modelsCli(home, ['write', 'codex'], 'feature: auto\n');
+    assert.equal(broken.status, 1);
+    assert.match(broken.stderr, /unmatched or repeated/);
+  } finally { rmSync(home, { recursive: true, force: true }); }
+});
+
+test('Codex roles go to AGENTS.override.md when Codex loads it instead of AGENTS.md', () => {
+  const home = mkdtempSync(join(tmpdir(), 'xstack-home-'));
+  try {
+    const codexHome = join(home, 'codex-home');
+    mkdirSync(codexHome);
+    writeFileSync(join(codexHome, 'AGENTS.md'), 'Base rules.\n');
+    writeFileSync(join(codexHome, 'AGENTS.override.md'), 'Override rules.\n');
+    const written = modelsCli(home, ['write', 'codex'], 'feature: gpt-6.1-sol @ high\n');
+    assert.equal(written.stdout.trim(), join(codexHome, 'AGENTS.override.md'));
+    assert.match(readFileSync(join(codexHome, 'AGENTS.override.md'), 'utf8'), /^Override rules\.\n\n<!-- xstack-models:start -->/);
+    assert.equal(readFileSync(join(codexHome, 'AGENTS.md'), 'utf8'), 'Base rules.\n');
+    writeFileSync(join(codexHome, 'AGENTS.override.md'), '  \n');
+    assert.equal(modelsCli(home, ['write', 'codex'], 'feature: auto\n').stdout.trim(), join(codexHome, 'AGENTS.md'));
+  } finally { rmSync(home, { recursive: true, force: true }); }
+});
+
+test('the loaded role text names the panels and keeps the judge pool to one judge', () => {
+  const home = mkdtempSync(join(tmpdir(), 'xstack-home-'));
+  try {
+    assert.equal(modelsCli(home, ['write', 'claude'], 'arena cross-judge pool: opus, sonnet\n').status, 0);
+    const rule = readFileSync(join(home, '.claude', 'rules', 'xstack-models.md'), 'utf8');
+    assert.match(rule, /arena runners, architect runners, and interrogate reviewers spawn one subagent per entry/);
+    assert.match(rule, /arena cross-judge pool lists alternatives for arena's one judge/);
+  } finally { rmSync(home, { recursive: true, force: true }); }
+});
+
+test('read falls back to the legacy shared file until a host is written', () => {
+  const home = mkdtempSync(join(tmpdir(), 'xstack-home-'));
+  try {
+    mkdirSync(join(home, '.agents'));
+    writeFileSync(join(home, '.agents', 'xstack-models.md'), '## codex\nfeature: legacy-model\n');
+    mkdirSync(join(home, 'codex-home'));
+    writeFileSync(join(home, 'codex-home', 'AGENTS.md'), 'No xstack block here.\n');
+    const legacy = modelsCli(home, ['read', 'codex']);
+    assert.match(legacy.stderr, /\.agents\/xstack-models\.md/);
+    assert.deepEqual(JSON.parse(modelsCli(home, ['codex', 'feature']).stdout).entries, [{ model: 'legacy-model', effort: null }]);
+    assert.equal(modelsCli(home, ['write', 'codex'], legacy.stdout).status, 0);
+    assert.match(modelsCli(home, ['read', 'codex']).stderr, /codex-home\/AGENTS\.md/);
+    assert.equal(modelsCli(home, ['write', 'claude'], 'feature: alpha @ ultra\nbogus role: x\n').status, 1);
+  } finally { rmSync(home, { recursive: true, force: true }); }
+});
+
 test('filled portable plan passes with all ten lanes', () => {
   const result = check(validPlan);
   assert.equal(result.status, 0, result.stderr);

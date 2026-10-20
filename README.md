@@ -7,7 +7,7 @@ xstack is a port of [pstack](https://github.com/cursor/plugins/tree/main/pstack)
 ## What you get
 
 - **`/poteto-mode`, the front door.** Give it a task and it matches one of 23 playbooks, such as bug fix, feature, refactoring, investigation, or opening a PR. It then runs the other skills as the steps need them. The name comes from Lauren Tan's GitHub handle, poteto. The skill captures her working style, and you can [generate your own](docs/guide/09-make-it-yours.md).
-- **Skills you call directly.** `/how` and `/why` explain code and its history. `/architect`, `/arena`, and `/interrogate` design and stress-test a change. `/tdd`, `/unslop`, and `/no-comments` build and clean it. `/benchmark-checklist` vets a measured speedup or regression before you report it. There are 54 skills in total.
+- **Skills you call directly.** `/how` and `/why` explain code and its history. `/architect`, `/arena`, and `/interrogate` design and stress-test a change. `/tdd`, `/unslop`, and `/no-comments` build and clean it. `/benchmark-checklist` vets a measured speedup or regression before you report it. `/create-formal-verification-skill` proves a key property, such as "a job never runs twice at once", in every case within a stated scope, where tests rarely reach. There are 56 skills in total.
 - **Skills that help you steer.** `/poteto-help` finds the skill, playbook, or principle that fits what you're trying to do and hands you a prompt to type. `/in-your-own-words` has the agent play back your goal and the problem before it starts. `/sharpen` aims a task at what you're really after, the way a top expert would approach it. `/ketchup` sums up what changed in a long chat since your last message. `/correct` mines your history for mistakes you keep correcting and fixes each one where it can be enforced, such as types, lint, CI, or tests, before falling back to docs.
 - **24 named principles.** Rules such as Prove It Works, Subtract Before You Add, and Explain the Number. The agent applies them on its own and you can steer it by naming one.
 - **Benny, an optional Slack bot.** It triages issue reports and tries to reproduce them. It is dormant until you [set it up](automations/benny/README.md). Installing xstack turns on no automation.
@@ -37,7 +37,7 @@ For a skill-only install, copy skill folders into `.agents/skills/` or `~/.agent
 
 ## First task
 
-1. Run `setup-xstack`. It detects the models your host offers, asks for a reasoning budget, and writes `~/.agents/xstack-models.md`.
+1. Run `setup-xstack`. It reads the models your host's subagent tool offers, asks for a reasoning budget, and writes the roles where the host loads them into every new session: `~/.claude/rules/xstack-models.md` in Claude Code, or a marked xstack block in `~/.codex/AGENTS.md` in Codex.
 2. Run `poteto-mode` with a concrete task and a way to tell when it's done:
 
 ```text
@@ -57,6 +57,7 @@ Most of xstack needs nothing beyond git and your host. A few workflows lean on o
 | Run the Orchestrate playbook, a multi-day program with many stacked PRs | `gh`, or the `origin` CLI on Origin, plus Bun. Orchestrate reads the order of a PR stack by walking the PR base chain through the forge, and keeps its bookkeeping with a bundled Bun script. No workflow needs Graphite. |
 | Leave a task running overnight | A scheduler or watcher that survives the session. Claude Code has `/loop`. Without a persistent runner, the loop stops when the session ends. |
 | Verify a change in a UI | A way to drive the app: a browser, a native-app driver, or a CLI. `/create-verification-skill` writes one for your project. |
+| Formally verify a property | A verifier the project's developers can install, such as TLA+ for ordering bugs. `/create-formal-verification-skill` picks one and says why. |
 | Run Benny | A Slack app, an event runner, credentials, and your explicit authorization. See the [Benny README](automations/benny/README.md). |
 
 When a bundled helper agent or model is missing, the workflow says so and uses what the host has instead. A missing app driver is different. UI verification then reports blocked, never a pass.

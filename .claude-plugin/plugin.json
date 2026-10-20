@@ -1,7 +1,7 @@
 {
 	"name": "xstack",
 	"displayName": "xstack",
-	"version": "0.4.0",
+	"version": "0.5.0",
 	"description": "pstack's rigorous agent workflows, ported to Claude Code and Codex. Write less, but higher quality code.",
 	"author": {
 		"name": "Justin Ramos"

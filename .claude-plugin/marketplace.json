@@ -6,14 +6,15 @@
 	"plugins": [
 		{
 			"name": "xstack",
-			"source": "./",
+			"source": "./claude",
 			"description": "pstack's rigorous agent workflows, ported to Claude Code and Codex."
 		},
 		{
 			"name": "xstack-next",
 			"source": {
-				"source": "github",
-				"repo": "justinramos101/xstack",
+				"source": "git-subdir",
+				"url": "https://github.com/justinramos101/xstack.git",
+				"path": "claude",
 				"ref": "next"
 			},
 			"description": "Prerelease xstack from the next branch, for trying changes before a release."

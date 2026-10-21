@@ -1,0 +1,39 @@
+{
+	"description": "xstack skill paths for Claude Code: tells each session and subagent where the installed skill files live, and turns a refused Skill call on a user-invocation-only skill into a pointer to its SKILL.md. Reads nothing but this plugin's own files and sends nothing anywhere.",
+	"hooks": {
+		"SessionStart": [
+			{
+				"hooks": [
+					{
+						"type": "command",
+						"command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/skill-paths.sh\" session",
+						"timeout": 5
+					}
+				]
+			}
+		],
+		"SubagentStart": [
+			{
+				"hooks": [
+					{
+						"type": "command",
+						"command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/skill-paths.sh\" subagent",
+						"timeout": 5
+					}
+				]
+			}
+		],
+		"PreToolUse": [
+			{
+				"matcher": "Skill",
+				"hooks": [
+					{
+						"type": "command",
+						"command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/skill-paths.sh\" skill",
+						"timeout": 5
+					}
+				]
+			}
+		]
+	}
+}

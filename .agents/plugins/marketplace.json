@@ -8,7 +8,7 @@
 			"name": "xstack",
 			"source": {
 				"source": "local",
-				"path": "./"
+				"path": "./codex"
 			},
 			"policy": {
 				"installation": "AVAILABLE"

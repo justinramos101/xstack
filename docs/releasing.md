@@ -6,17 +6,17 @@ This page is for maintainers. Users install from the [README](../README.md#insta
 
 Claude Code copies the plugin at install and fetches a new copy only when the manifest `version` changes, so pushing commits without a bump reaches no Claude Code user who already has xstack installed. Codex can refresh its copy on an explicit marketplace upgrade regardless, but treat the version as the release signal on both hosts. So:
 
-- **Bump the version** when anything under `skills/`, `agents/`, or `hooks/` changes. That is every pstack sync.
+- **Bump the version** when anything under `src/` or `hosts/` changes. That is every pstack sync. After a sync, run `node scripts/build.mjs` and commit the regenerated `claude/` and `codex/` trees. `node scripts/build.mjs --check` fails while they are stale.
 - **Leave it alone** for docs, tests, and CI. Installed users run none of that.
 
-The version lives in three manifests, `plugin.json`, `.claude-plugin/plugin.json`, and `.codex-plugin/plugin.json`, and `scripts/manifests.test.mjs` fails when they disagree.
+The version lives in `src/plugin.json`. The build writes it into `claude/.claude-plugin/plugin.json`, `codex/plugin.json`, and `codex/.codex-plugin/plugin.json`, and `scripts/manifests.test.mjs` fails when they disagree.
 
 ## Cut a release
 
-1. Bump the version in all three manifests in the PR that carries the change. Use a plain `x.y.z` on `main`.
+1. Bump the version in `src/plugin.json` in the PR that carries the change, then run `node scripts/build.mjs`. Use a plain `x.y.z` on `main`.
 2. Merge to `main`.
 
-The [release workflow](../.github/workflows/release.yml) runs when `.claude-plugin/plugin.json` changes on `main`. It tags `v<version>` and publishes a GitHub release whose notes list the merged PRs since the previous tag. A version that is already tagged is skipped, so re-running is safe. The workflow fails if a prerelease version such as `0.6.0-alpha.1` lands on `main`.
+The [release workflow](../.github/workflows/release.yml) runs when `src/plugin.json` changes on `main`. It tags `v<version>` and publishes a GitHub release whose notes list the merged PRs since the previous tag. A version that is already tagged is skipped, so re-running is safe. The workflow fails if a prerelease version such as `0.6.0-alpha.1` lands on `main`.
 
 The sync PR title already names the pstack range, so the generated notes say which upstream revision a version tracks.
 
@@ -26,19 +26,19 @@ Two ways, lightest first.
 
 ### One session from a checkout
 
-Start Claude Code with the checkout as a plugin directory:
+Start Claude Code with the checkout's generated Claude tree as a plugin directory:
 
 ```sh
-claude --plugin-dir /path/to/xstack
+claude --plugin-dir ./claude
 ```
 
-That loads the files in place for that session only, no version bump needed, and replaces the installed xstack for the session because both have the manifest name `xstack`. Edits show up on the next start. This is the right tool while you are still editing.
+That loads the files in place for that session only, no version bump needed, and replaces the installed xstack for the session because both have the manifest name `xstack`. Run `node scripts/build.mjs` after each edit under `src/`, and the edits show up on the next start. This is the right tool while you are still editing.
 
 ### Every session from the `next` branch
 
 For changes you want to live with for a while, push them to the `next` branch with a prerelease version, then install the `xstack-next` entry.
 
-1. On `next`, set the version in all three manifests to a prerelease such as `0.6.0-alpha.1`. Every later push to `next` that you want to receive needs a new prerelease version, because updates are detected by version, not by commit.
+1. On `next`, set the version in `src/plugin.json` to a prerelease such as `0.6.0-alpha.1` and run `node scripts/build.mjs`. Every later push to `next` that you want to receive needs a new prerelease version, because updates are detected by version, not by commit.
 2. Push to `next`. The release workflow publishes `v0.6.0-alpha.1` as a GitHub prerelease, and fails if `next` carries a plain `x.y.z`.
 3. Switch your install to it. The two entries share the manifest name `xstack`, so keep only one enabled or Claude Code drops the hooks of one of them:
 

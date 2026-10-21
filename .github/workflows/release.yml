@@ -2,7 +2,7 @@ name: Release
 on:
   push:
     branches: [main, next]
-    paths: ['.claude-plugin/plugin.json']
+    paths: ['src/plugin.json']
 permissions:
   contents: write
 jobs:
@@ -19,7 +19,7 @@ jobs:
           BRANCH: ${{ github.ref_name }}
           SHA: ${{ github.sha }}
         run: |
-          version=$(node -p 'require("./.claude-plugin/plugin.json").version')
+          version=$(node -p 'require("./src/plugin.json").version')
           tag="v$version"
           case "$BRANCH:$version" in
             main:*-*) echo "::error::main carries prerelease version $version; use a plain x.y.z on main" >&2; exit 1 ;;

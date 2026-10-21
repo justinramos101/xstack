@@ -70,6 +70,7 @@
     "Provider-neutral make-bot-ui",
     "Portable checked plans and bounded local verification lanes",
     "Benny runner setup replaces managed Cursor automation setup",
-    "Model roles written where each host loads them: a Claude Code rule and a marked block in Codex AGENTS.md"
+    "Model roles written where each host loads them: a Claude Code rule and a marked block in Codex AGENTS.md",
+    "Generated per-host Claude Code and Codex plugin trees rendered from a host-neutral src/ by scripts/build.mjs"
   ]
 }

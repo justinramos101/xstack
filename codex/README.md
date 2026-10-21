@@ -59,15 +59,16 @@ When a bundled helper agent or model is missing, the workflow says so and uses w
 
 ## Contributing
 
-xstack tracks pstack release by release. The pinned upstream revision is in [docs/upstream.json](https://github.com/justinramos101/xstack/blob/main/docs/upstream.json). Run the tests before opening a PR:
+xstack tracks pstack release by release. The pinned upstream revision is in [docs/upstream.json](https://github.com/justinramos101/xstack/blob/main/docs/upstream.json). Edit skills and agents under `src/`, and host-only data under `hosts/`. Then render the Claude Code and Codex plugin trees in `claude/` and `codex/`, commit them with the change, and run the tests before opening a PR:
 
 ```sh
+node scripts/build.mjs
 node --test scripts/*.test.mjs
-claude plugin validate --strict .
-cd skills/poteto-mode/scripts && bun install --frozen-lockfile && bun run test && bun run typecheck
+claude plugin validate --strict ./claude
+cd src/skills/poteto-mode/scripts && bun install --frozen-lockfile && bun run test && bun run typecheck
 ```
 
-A release is a version bump in all three plugin manifests: `plugin.json`, `.claude-plugin/plugin.json`, and `.codex-plugin/plugin.json`. The tests fail when they disagree, and merging the bump to `main` tags and publishes a GitHub release. [Releasing](https://github.com/justinramos101/xstack/blob/main/docs/releasing.md) covers that and how to try a change before it ships.
+A release is a version bump in `src/plugin.json`, the only place the version lives. The build copies it into each tree's manifests, and merging the bump to `main` tags and publishes a GitHub release. [Releasing](https://github.com/justinramos101/xstack/blob/main/docs/releasing.md) covers that and how to try a change before it ships.
 
 ## License
 

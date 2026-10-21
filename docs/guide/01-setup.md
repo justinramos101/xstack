@@ -50,3 +50,9 @@ xstack spends extra tokens on subagents and review panels. That's the price of t
 ## Run your first task
 
 Try `/poteto-mode explain how this project's main request path works`, or `$poteto-mode` in Codex. Put the task in the same message so the skill is attached to it. From there you can type normal follow-ups. In a long session, invoke `/poteto-mode` again when you start a new task, so its rules are fresh in context. The [next chapter](02-poteto-mode.md) explains task routing.
+
+## Manual install
+
+The plugin is the recommended install. It includes the helper agent definitions the workflows use and, in Claude Code, a hook that tells each session where the skill files live. Most xstack skills are meant to be run by you, not chosen by the model on its own, and Claude Code hides those from the model unless the hook is present.
+
+You can instead copy individual skill folders into `.claude/skills/` for one project or `~/.claude/skills/` for your account in Claude Code, or into `.agents/skills/` or `~/.agents/skills/` in Codex. Create those directories if they do not exist. If you already have a skill with the same name, keep your copy. That works for single skills, with two limits. In Claude Code, the model cannot find the hidden skills without the hook. And a skill-only install has no bundled agent prompts, so workflows that need them run inline and say so.

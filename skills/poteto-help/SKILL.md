@@ -24,8 +24,9 @@ Infer the need from the message and the conversation. A named situation, such as
 
 Check the state that changes the answer, and mention it only when it does:
 
-- No `~/.agents/xstack-models.md`, or no section in it for the active host, means `/setup-xstack` hasn't run for this host, so every role inherits the parent model.
+- No `# xstack model roles` lines in context does not mean setup never ran: the session may predate setup, or the user may still have the legacy `~/.agents/xstack-models.md`. Run `node <setup-xstack skill directory>/scripts/models.mjs read <claude|codex>` before you say so. If it names the legacy file, the roles still apply, and `/setup-xstack` moves them to where the host loads them. If it finds no config, `/setup-xstack` hasn't run for this host, so every role inherits the parent model.
 - No `verify-*` skill or other app harness in the project means agents have no scripted way to drive the app. Mention `/create-verification-skill` when the question is about proving a change works.
+- No formal verification skill in the project means no property is checked past what tests reach. Mention `/create-formal-verification-skill` when the question is about a race, an invariant, or another case tests rarely hit. When one exists and the code it covers changed after the commit it records as last in sync, mention `/maintain-formal-verification-skill` if the question touches that code.
 
 When the model config is missing and it matters, ask whether the user wants to pick a model for each role and a reasoning budget now. It matters when the user is new, the question is about setup or cost, or the answer depends on which models run. Ask at most once per chat. If the need is also unclear, ask both questions together. Offer two choices:
 
@@ -35,7 +36,7 @@ When the model config is missing and it matters, ask whether the user wants to p
 ## Get set up
 
 1. Install the plugin. In Claude Code, run `/plugin marketplace add justinramos101/xstack`, then `/plugin install xstack@xstack`. In Codex, run `codex plugin marketplace add justinramos101/xstack`, then `codex plugin add xstack@xstack`, or install it from the Plugins interface.
-2. Run [`/setup-xstack`](../setup-xstack/SKILL.md). It detects the models the host offers, asks for a reasoning budget, maps a model to each role, and writes the active host's section of `~/.agents/xstack-models.md`. Skills read it before their next delegation.
+2. Run [`/setup-xstack`](../setup-xstack/SKILL.md). It detects the models the host offers, asks for a reasoning budget, maps a model to each role, and writes the roles where the host loads them into every new session: `~/.claude/rules/xstack-models.md` on Claude Code, or an xstack block in `~/.codex/AGENTS.md` on Codex. Then it offers once each to generate a verification skill and a formal verification skill for the project, unless the project already has one.
 3. Start a real task with `/poteto-mode`, a goal, and a check that can pass or fail.
 
 Installing changes nothing until the user invokes a skill. Only `/setup-xstack` loads from the user's words. Claude Code invokes skills as slash commands. Codex also accepts `$skill-name`. The [README](../../README.md) and [guide page 1](../../docs/guide/01-setup.md) have the details. Offer to word their first prompt with them, per [`references/prompting.md`](references/prompting.md).
@@ -60,12 +61,12 @@ The default answer is `/poteto-mode`, which runs most of the others when its ste
 |---|---|
 | Do any non-trivial task with rigor | [`/poteto-mode`](../poteto-mode/SKILL.md) |
 | Check that the agent understood their goal and the problem before it starts | [`/in-your-own-words`](../in-your-own-words/SKILL.md) |
-| Aim a task higher before starting: more expert, more outcome-focused, not overspecified | [`/sharpen`](../sharpen/SKILL.md) |
+| Get a prompt rewritten deeper, not bigger, before sending it: what a top professional would add, their raw material and methods, and an outside check. It returns the prompt and doesn't do the task | [`/sharpen`](../sharpen/SKILL.md) |
 | Know how code works now, or where new code should live | [`/how`](../how/SKILL.md) |
 | Know why code is shaped this way, or where a number came from | [`/why`](../why/SKILL.md) |
 | Understand a change or subsystem, explained plainly | [`/teach`](../teach/SKILL.md) |
 | Catch up on their own recent work on a topic | [`/recall`](../recall/SKILL.md) |
-| Catch up on what changed in this chat since their last message, in a few plain sentences and small visuals, with enough context to decide each action item | [`/ketchup`](../ketchup/SKILL.md) |
+| Catch up on what changed in this chat since their last message, in plain words and small visuals, with every item waiting on them listed and decidable from the reply alone | [`/ketchup`](../ketchup/SKILL.md) |
 | Know what a small diff could break outside itself | [`/blast-radius`](../blast-radius/SKILL.md) |
 | Settle types and module shape before code that crosses a function boundary | [`/architect`](../architect/SKILL.md) |
 | Get several attempts at one brief, merged into the best one | [`/arena`](../arena/SKILL.md) |
@@ -79,6 +80,8 @@ The default answer is `/poteto-mode`, which runs most of the others when its ste
 | Hear the last reply again in plain words | [`/bro`](../bro/SKILL.md) |
 | Give agents a scripted way to drive the app and prove behavior | [`/create-verification-skill`](../create-verification-skill/SKILL.md) |
 | Bring a verification skill and its feature map back in line with the app | [`/maintain-verification-skill`](../maintain-verification-skill/SKILL.md) |
+| Formally verify a race, invariant, or other property that tests rarely reach | [`/create-formal-verification-skill`](../create-formal-verification-skill/SKILL.md) |
+| Bring a formal verification back in line after the code it covers changed, and learn whether a failure is drift or a bug | [`/maintain-formal-verification-skill`](../maintain-formal-verification-skill/SKILL.md) |
 | Vet a performance number before reporting or acting on it | [`/benchmark-checklist`](../benchmark-checklist/SKILL.md) |
 | Run a large or cross-cutting change, or one to review after stepping away | [`/figure-it-out`](../figure-it-out/SKILL.md) |
 | Keep a decision log during a run, and review it afterward | [`/show-me-your-work`](../show-me-your-work/SKILL.md) |
@@ -129,7 +132,7 @@ Principles are one-rule skills that `/poteto-mode` reads and cites in its replie
 |---|---|
 | The mode stopped applying after a few turns | It faded as the chat grew or after compaction. Start each task with `/poteto-mode`. |
 | A question got treated as the next step of the last task | Say "new task", or say the turn doesn't need the mode. |
-| A new model choice had no effect | Check that `/setup-xstack` wrote the active host's section of `~/.agents/xstack-models.md`, and that the host supports that model and effort. A role the host can't run falls back to the parent model. |
+| A new model choice had no effect | Check that `/setup-xstack` wrote the host's roles (`~/.claude/rules/xstack-models.md` on Claude Code, the xstack block in `~/.codex/AGENTS.md` on Codex), that the session started after the write, and that the host's spawn tool lists that model and effort. A role the host can't run falls back to the parent model. |
 | Runs cost more than expected | See the cost paragraph under Get set up. |
 | A skill didn't load on its own | Only `/setup-xstack` loads from the user's words. The others load when the user types them or when `/poteto-mode` runs them, and it doesn't run every skill. |
 | Parallel agents overwrote each other | Give each agent its own worktree and explicit file ownership. |

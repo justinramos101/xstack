@@ -1,8 +1,8 @@
 {
   "repository": "https://github.com/cursor/plugins",
   "path": "pstack",
-  "revision": "850d7f2e9f5e55dff7eb00a0a479337fe79eb22f",
-  "version": "0.15.25",
+  "revision": "88d47514b82e7c44f00f2b2a72ff6dd12158038c",
+  "version": "0.15.29",
   "pathMapping": {
     "skills/setup-pstack": "skills/setup-xstack"
   },
@@ -14,12 +14,14 @@
     "blast-radius",
     "bro",
     "correct",
+    "create-formal-verification-skill",
     "create-verification-skill",
     "figure-it-out",
     "how",
     "in-your-own-words",
     "interrogate",
     "ketchup",
+    "maintain-formal-verification-skill",
     "maintain-verification-skill",
     "make-bot-ui",
     "no-comments",
@@ -67,6 +69,7 @@
     "Codex explicit-invocation metadata",
     "Provider-neutral make-bot-ui",
     "Portable checked plans and bounded local verification lanes",
-    "Benny runner setup replaces managed Cursor automation setup"
+    "Benny runner setup replaces managed Cursor automation setup",
+    "Model roles written where each host loads them: a Claude Code rule and a marked block in Codex AGENTS.md"
   ]
 }

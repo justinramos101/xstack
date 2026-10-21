@@ -11,7 +11,7 @@ The pages, in order:
 3. [Understand the code](./03-understand.md). Run a read-only investigation, then `/how`, `/why`, `/teach`, and `/recall`, before you edit anything.
 4. [Design the change](./04-design.md). Use `/architect`, `/arena`, `/swarm`, `/interrogate`, prototypes, and plans before code locks in a shape.
 5. [Build and clean the change](./05-build-and-clean.md). Use the build playbooks, `/tdd`, `/unslop`, and `/no-comments`.
-6. [Verify and ship](./06-verify-and-ship.md). Prove behavior on the real app, vet numbers with `/benchmark-checklist`, then open a focused PR and drive it to merged.
+6. [Verify and ship](./06-verify-and-ship.md). Prove behavior on the real app, formally verify what tests rarely reach, vet numbers with `/benchmark-checklist`, then open a focused PR and drive it to merged.
 7. [Run work while you sleep](./07-overnight.md). Earn trust before a loop, write an overnight contract, audit the decision log, and scale past one agent with coordinator sessions and automations.
 8. [Steer with principle names](./08-principles.md). Use the 24 names that redirect an agent mid-task.
 9. [Make it yours](./09-make-it-yours.md). Generate your own mode, fix repeated mistakes with `/correct`, and test a skill change.

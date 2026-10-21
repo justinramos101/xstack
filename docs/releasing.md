@@ -6,7 +6,7 @@ This page is for maintainers. Users install from the [README](../README.md#insta
 
 Claude Code copies the plugin at install and fetches a new copy only when the manifest `version` changes, so pushing commits without a bump reaches no Claude Code user who already has xstack installed. Codex can refresh its copy on an explicit marketplace upgrade regardless, but treat the version as the release signal on both hosts. So:
 
-- **Bump the version** when anything under `src/` or `hosts/` changes. That is every pstack sync. After a sync, run `node scripts/build.mjs` and commit the regenerated `claude/` and `codex/` trees. `node scripts/build.mjs --check` fails while they are stale.
+- **Bump the version** when anything under `src/` or `hosts/` changes. That is every pstack sync. After a sync, run `node scripts/build.mjs` and commit the regenerated `claude/` and `codex/` trees. Also compare the Codex defaults in `src/skills/setup-xstack/scripts/models.mjs` with the models Codex's spawn tool lists. Codex names models by dated slug, so a retired one degrades every spawn of that role to the parent until the default is bumped. `node scripts/build.mjs --check` fails while they are stale.
 - **Leave it alone** for docs, tests, and CI. Installed users run none of that.
 
 The version lives in `src/plugin.json`. The build writes it into `claude/.claude-plugin/plugin.json`, `codex/plugin.json`, and `codex/.codex-plugin/plugin.json`, and `scripts/manifests.test.mjs` fails when they disagree.

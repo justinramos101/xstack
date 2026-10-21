@@ -27,8 +27,8 @@ jobs:
             next:*) echo "::error::next carries release version $version; use a prerelease such as $version-alpha.1 on next" >&2; exit 1 ;;
             *) prerelease= ;;
           esac
-          if gh release view "$tag" >/dev/null 2>&1; then
-            echo "$tag already released"
+          if gh api "repos/$GITHUB_REPOSITORY/git/ref/tags/$tag" >/dev/null 2>&1; then
+            echo "$tag already exists; bump the version to release again"
             exit 0
           fi
           gh release create "$tag" --target "$SHA" --title "$tag" --generate-notes $prerelease

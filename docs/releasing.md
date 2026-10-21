@@ -4,7 +4,7 @@ This page is for maintainers. Users install from the [README](../README.md#insta
 
 ## Why the version matters
 
-Claude Code and Codex copy the plugin at install and only fetch a new copy when the manifest `version` changes. Pushing commits without a bump reaches nobody who already has xstack installed. So:
+Claude Code copies the plugin at install and fetches a new copy only when the manifest `version` changes, so pushing commits without a bump reaches no Claude Code user who already has xstack installed. Codex can refresh its copy on an explicit marketplace upgrade regardless, but treat the version as the release signal on both hosts. So:
 
 - **Bump the version** when anything under `skills/`, `agents/`, or `hooks/` changes. That is every pstack sync.
 - **Leave it alone** for docs, tests, and CI. Installed users run none of that.

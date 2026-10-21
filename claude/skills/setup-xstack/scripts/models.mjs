@@ -7,6 +7,18 @@ import { pathToFileURL } from 'node:url';
 export const roles = ['feature', 'refactoring', 'bug-fix', 'perf-issue', 'hillclimb', 'judgment and prose', 'hardest tasks', 'how explorer', 'how explainer', 'why investigators', 'why synthesizer', 'reflect tooling', 'reflect judgment', 'divergent', 'synthesizer', 'arena runners', 'arena cross-judge pool', 'swarm workers', 'architect runners', 'interrogate reviewers'];
 const panels = new Set(['arena runners', 'arena cross-judge pool', 'architect runners', 'interrogate reviewers']);
 const budgets = { unlimited: null, large: 'xhigh', medium: 'high', small: 'medium' };
+// pstack's defaults per host. Its fast-coding roles (grok-4.7-xhigh-fast) and its
+// judgment roles (claude-opus-5-5-xhigh) map to each host's nearest model; Claude
+// Code has no Grok, so pstack's own Claude Code map runs those roles on the parent.
+const fastRoles = ['feature', 'refactoring', 'bug-fix', 'perf-issue', 'hillclimb', 'how explorer', 'why investigators', 'reflect tooling', 'swarm workers'];
+const lineups = {
+  claude: { fast: 'inherit-parent', strong: 'opus @ xhigh' },
+  codex: { fast: 'gpt-6.1-sol @ xhigh', strong: 'gpt-6-astra @ xhigh' },
+};
+export const defaults = Object.fromEntries(Object.entries(lineups).map(([host, { fast, strong }]) => [
+  host,
+  Object.fromEntries(roles.map(role => [role, panels.has(role) ? `${strong}, ${fast}, ${strong}, ${fast}` : fastRoles.includes(role) ? fast : strong])),
+]));
 const efforts = new Set(['low', 'medium', 'high', 'xhigh', 'max', 'ultra']);
 const START = '<!-- xstack-models:start -->';
 const END = '<!-- xstack-models:end -->';
@@ -64,8 +76,7 @@ export function resolveRole(source, host, role) {
   const sections = parse(source);
   const values = new Map([...sections.shared, ...sections[host]]);
   const budget = values.get('budget') ?? 'unlimited';
-  const defaults = Array(panels.has(role) ? 4 : 1).fill('inherit-parent').join(', ');
-  const entries = (values.get(role) ?? defaults).split(',').map(value => {
+  const entries = (values.get(role) ?? defaults[host][role]).split(',').map(value => {
     const match = value.trim().match(/^([\w.-]+)(?:\s*@\s*([\w]+))?$/);
     if (!match || (match[2] && !efforts.has(match[2]))) throw new Error(`Invalid model entry: ${value}`);
     const model = match[1];
@@ -85,6 +96,12 @@ export function extractBlock(text) {
   const start = text.indexOf(START);
   const end = text.indexOf(END, start);
   return start === -1 || end === -1 ? null : text.slice(start + START.length, end);
+}
+
+// xstack's default roles for a host, as a draft setup-xstack can start from.
+export function defaultDraft(host) {
+  checkHost(host);
+  return roles.map(role => `${role}: ${defaults[host][role]}`).join('\n') + '\n';
 }
 
 // The current config for a host: its loaded file first, then the legacy shared file.
@@ -118,7 +135,7 @@ export function render(host, draft) {
   return [
     `# xstack model roles for ${hostNames[host]}. Written by setup-xstack; rerun it to change them.`,
     '# When a skill spawns a subagent for a role, pass the model and effort from that role\'s line. `inherit-parent` or `auto`: omit both, so the subagent runs on this session\'s model and effort.',
-    '# arena runners, architect runners, and interrogate reviewers spawn one subagent per entry. arena cross-judge pool lists alternatives for arena\'s one judge. A role with no line inherits.',
+    '# arena runners, architect runners, and interrogate reviewers spawn one subagent per entry. arena cross-judge pool lists alternatives for arena\'s one judge. A role with no line uses xstack\'s default, which `models.mjs <host> "<role>"` in the setup-xstack skill prints.',
     `# budget: ${budget} (${cap})`,
     ...lines,
   ].join('\n') + '\n';
@@ -160,8 +177,8 @@ if (process.argv[1] && import.meta.url === pathToFileURL(realpathSync(process.ar
     const [command, ...args] = process.argv.slice(2);
     if (command === 'read' && args.length === 1) {
       const { source, from } = readConfig(args[0]);
-      console.error(from ? `from ${from}` : 'no config; every role inherits');
-      process.stdout.write(source);
+      console.error(from ? `from ${from}` : `no config; showing xstack's defaults for ${args[0]}`);
+      process.stdout.write(from ? source : defaultDraft(args[0]));
     } else if (command === 'write' && args.length >= 1 && args.length <= 2) {
       const draft = readFileSync(args[1] ?? 0, 'utf8');
       console.log(writeConfig(args[0], draft));

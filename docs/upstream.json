@@ -65,7 +65,7 @@
     "why"
   ],
   "adaptations": [
-    "Host runtime and inherited model defaults with per-host configuration",
+    "Host runtime and per-host model defaults mapped from pstack's lineup",
     "Codex explicit-invocation metadata",
     "Provider-neutral make-bot-ui",
     "Portable checked plans and bounded local verification lanes",

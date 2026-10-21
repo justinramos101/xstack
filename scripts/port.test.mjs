@@ -4,7 +4,7 @@ import { mkdtempSync, mkdirSync, realpathSync, symlinkSync, readFileSync, writeF
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { spawnSync } from 'node:child_process';
-import { resolveRole } from '../src/skills/setup-xstack/scripts/models.mjs';
+import { defaultDraft, resolveRole, roles } from '../src/skills/setup-xstack/scripts/models.mjs';
 import { validateTrigger } from '../automations/benny/scripts/validate-trigger.mjs';
 
 const root = new URL('../', import.meta.url);
@@ -20,8 +20,27 @@ function check(plan) {
   } finally { rmSync(dir, { recursive: true, force: true }); }
 }
 
-test('unconfigured role inherits both model and effort', () => {
-  assert.deepEqual(resolveRole('', 'codex', 'bug-fix'), { host: 'codex', role: 'bug-fix', budget: 'unlimited', entries: [{ model: null, effort: null }] });
+test('unconfigured roles take each host\'s default lineup', () => {
+  assert.deepEqual(resolveRole('', 'codex', 'bug-fix'), { host: 'codex', role: 'bug-fix', budget: 'unlimited', entries: [{ model: 'gpt-6.1-sol', effort: 'xhigh' }] });
+  assert.deepEqual(resolveRole('', 'codex', 'why synthesizer').entries, [{ model: 'gpt-6-astra', effort: 'xhigh' }]);
+  assert.deepEqual(resolveRole('', 'claude', 'bug-fix').entries, [{ model: null, effort: null }]);
+  assert.deepEqual(resolveRole('', 'claude', 'hardest tasks').entries, [{ model: 'opus', effort: 'xhigh' }]);
+  assert.deepEqual(resolveRole('', 'claude', 'interrogate reviewers').entries, [{ model: 'opus', effort: 'xhigh' }, { model: null, effort: null }, { model: 'opus', effort: 'xhigh' }, { model: null, effort: null }]);
+  assert.deepEqual(resolveRole('# budget: small\n', 'codex', 'arena runners').entries, [{ model: 'gpt-6-astra', effort: 'medium' }, { model: 'gpt-6.1-sol', effort: 'medium' }, { model: 'gpt-6-astra', effort: 'medium' }, { model: 'gpt-6.1-sol', effort: 'medium' }]);
+  assert.deepEqual(resolveRole('feature: inherit-parent\n', 'codex', 'feature').entries, [{ model: null, effort: null }]);
+});
+test('every default resolves and the default draft round-trips through write', () => {
+  for (const host of ['claude', 'codex']) {
+    for (const role of roles) assert.doesNotThrow(() => resolveRole(defaultDraft(host), host, role));
+  }
+  const home = mkdtempSync(join(tmpdir(), 'xstack-home-'));
+  try {
+    const empty = modelsCli(home, ['read', 'codex']);
+    assert.match(empty.stderr, /no config; showing xstack's defaults for codex/);
+    assert.equal(empty.stdout, defaultDraft('codex'));
+    assert.equal(modelsCli(home, ['write', 'claude'], defaultDraft('claude')).status, 0);
+    assert.deepEqual(JSON.parse(modelsCli(home, ['claude', 'judgment and prose']).stdout).entries, [{ model: 'opus', effort: 'xhigh' }]);
+  } finally { rmSync(home, { recursive: true, force: true }); }
 });
 test('host overrides shared legacy roles without leaking into the other host', () => {
   const config = 'feature, refactoring: old-model\n## codex\n# budget: small\nfeature: coding-model @ max\n## claude\nfeature: another-model @ high\n';
@@ -248,7 +267,7 @@ test('model resolver CLI works through a symlinked installation', () => {
     symlinkSync(new URL('../src/skills/setup-xstack/scripts/models.mjs', import.meta.url), link);
     const result = spawnSync(process.execPath, [link, 'codex', 'feature', join(dir, 'missing-config.md')], { encoding: 'utf8' });
     assert.equal(result.status, 0, result.stderr);
-    assert.deepEqual(JSON.parse(result.stdout).entries, [{ model: null, effort: null }]);
+    assert.deepEqual(JSON.parse(result.stdout).entries, [{ model: 'gpt-6.1-sol', effort: 'xhigh' }]);
   } finally { rmSync(dir, { recursive: true, force: true }); }
 });
 

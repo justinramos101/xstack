@@ -30,7 +30,7 @@ Check the state that changes the answer, and mention it only when it does:
 When the model config is missing and it matters, ask whether the user wants to pick a model for each role and a reasoning budget now. It matters when the user is new, the question is about setup or cost, or the answer depends on which models run. Ask at most once per chat. If the need is also unclear, ask both questions together. Offer two choices:
 
 - Now: give them `/setup-xstack` to type, and answer their question too.
-- Later: answer their question, and add one line saying every role inherits the parent model until they run `/setup-xstack`.
+- Later: answer their question, and add one line saying every role runs on xstack's default models until they run `/setup-xstack`.
 
 ## Get set up
 

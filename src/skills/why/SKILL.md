@@ -10,7 +10,7 @@ Read [Host runtime](../poteto-mode/references/host-runtime.md) before using host
 
 Investigate the motivation and intent behind code. The companion `how` skill answers what the code does and how it works. `why` answers what forces led to its shape.
 
-Each spawn below names a role, resolved per Host runtime, and its default. Omit model and effort overrides when the value is `auto` or `inherit-parent`. If the host refuses a configured model, run that subagent on the parent model and say so. Pick each subagent's effort for the job, and fast mode only where the host offers it, per the Subagents section of the **poteto-mode** skill.
+Each spawn below names a role, resolved per Host runtime. Omit model and effort overrides when the value is `auto` or `inherit-parent`. If the host refuses a configured model, run that subagent on the parent model and say so. Pick each subagent's effort for the job, and fast mode only where the host offers it, per the Subagents section of the **poteto-mode** skill.
 
 Every spawn is a `general-purpose` subagent with a no-writes contract in its brief. Keep MCP access. **Do not pick a host mode that strips MCP tools.** That disables the MCP-backed investigators and the synthesizer's citation spot-checks. Use the read-only controls the host actually offers per Host runtime only when they keep the needed MCP read tools.
 
@@ -48,7 +48,7 @@ Map each available MCP to one evidence category:
 
 Source control is always available through git and `gh`. For the other six, classify using the MCP name, server instructions, tool names, and resource descriptors. If an MCP could fit more than one category, choose the one matching its primary evidence. Record ambiguous cases in the coverage map.
 
-Spawn one investigator per category that has a matching MCP, all in a single message so they run concurrently, each owning exactly one tool or MCP. Don't ask one agent to cover multiple MCPs. `model`: the `why investigators` role, default `inherit-parent`.
+Spawn one investigator per category that has a matching MCP, all in a single message so they run concurrently, each owning exactly one tool or MCP. Don't ask one agent to cover multiple MCPs. `model`: the `why investigators` role.
 
 Each investigator's prompt is `references/investigator-prompt.md` filled in, plus:
 - the category playbook `references/sources/<source>.md` for the selected MCP, adapted from the examples in `references/source-playbook.md`
@@ -78,7 +78,7 @@ If your scope assessment suggests a single-commit trivial target where the PR de
 
 ## Step 4. Synthesize
 
-Spawn one synthesizer. `model`: the `why synthesizer` role, default `inherit-parent`. It gets:
+Spawn one synthesizer. `model`: the `why synthesizer` role. It gets:
 1. The investigator findings, including any null results and any categories skipped with justification
 2. The code anchor
 3. The user's original question

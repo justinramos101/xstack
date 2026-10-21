@@ -10,7 +10,7 @@ Read [Host runtime](../poteto-mode/references/host-runtime.md) before using host
 
 Explore the codebase to answer "how does X work?" questions. Produce architectural explanations at the level of a senior engineer onboarding onto a subsystem, enough to build a working mental model, not so much that it reads like annotated source code.
 
-Every spawn is a `general-purpose` subagent with a read-only contract. Explorers use the `how explorer` role and every explainer uses the `how explainer` role, resolved per Host runtime. Missing configuration defaults to `inherit-parent`. Omit model and effort overrides when the value is `auto` or `inherit-parent`. If the host refuses a configured model, run that subagent on the parent model and say so. Pick each subagent's effort for the job, and fast mode only where the host offers it, per the Subagents section of the **poteto-mode** skill.
+Every spawn is a `general-purpose` subagent with a read-only contract. Explorers use the `how explorer` role and every explainer uses the `how explainer` role, resolved per Host runtime. Omit model and effort overrides when the value is `auto` or `inherit-parent`. If the host refuses a configured model, run that subagent on the parent model and say so. Pick each subagent's effort for the job, and fast mode only where the host offers it, per the Subagents section of the **poteto-mode** skill.
 
 ## 1. Assess complexity
 

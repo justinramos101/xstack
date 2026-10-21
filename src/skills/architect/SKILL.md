@@ -30,7 +30,7 @@ Skip Phase A only when the work is genuinely greenfield with no surrounding syst
 
 Run the **arena** skill with the design-sketch task and the Phase A grounding artifacts. Pass `references/runner-prompt.md` as each runner's prompt.
 
-Resolve the runners from the `architect runners` role per Host runtime, in place of `arena runners`. If configuration is missing, use the default inherited panel (`inherit-parent`, `inherit-parent`, `inherit-parent`, `inherit-parent`). Alias and refused entries follow the runner rules in the **arena** skill's Phase A.
+Resolve the runners from the `architect runners` role per Host runtime, in place of `arena runners`. Alias and refused entries follow the runner rules in the **arena** skill's Phase A.
 
 Design it twice. Require at least two structurally distinct candidates before synthesis, even when the first looks sufficient. This is the **exhaust-the-design-space** principle skill made concrete. Whole-shape alternatives, not point fixes inside one shape.
 

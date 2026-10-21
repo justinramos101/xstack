@@ -15,7 +15,7 @@ Every candidate gets the same prompt, so the prompt is the contract.
 
 1. State the artifact each candidate is producing.
 2. Derive the rubric, 3-6 concrete gradeable criteria for what success looks like on *this* task. It is the picker's tool in Phase D. Candidates only see the task.
-3. Pick the runners. Resolve `arena runners` per Host runtime. If configuration is missing, default to one each on `inherit-parent`, `inherit-parent`, `inherit-parent`, `inherit-parent`. An `auto` or `inherit-parent` entry in this line or the cross-judge line means the parent model, so omit model and effort overrides for it. If the host refuses a configured entry, run that seat on an inherited worker and report the reduced model diversity. Spawn more runners when the arena covers multiple design directions. Use the same model N times when the work is generation-bound rather than judgment-sensitive. Pick each subagent's effort for the job, and fast mode only where the host offers it, per the Subagents section of the **poteto-mode** skill.
+3. Pick the runners. Resolve `arena runners` per Host runtime, one runner per entry. An `auto` or `inherit-parent` entry in this line or the cross-judge line means the parent model, so omit model and effort overrides for it. If the host refuses a configured entry, run that seat on an inherited worker and report the reduced model diversity. Spawn more runners when the arena covers multiple design directions. Use the same model N times when the work is generation-bound rather than judgment-sensitive. Pick each subagent's effort for the job, and fast mode only where the host offers it, per the Subagents section of the **poteto-mode** skill.
 4. Give each candidate its own output location (a git worktree where possible, otherwise `/tmp/arena-<slug>/candidate-<n>/`), per the **separate-before-serializing-shared-state** principle skill.
 
 ## Phase B: Fan out
@@ -26,7 +26,7 @@ If a candidate produces no output, proceed with N-1 and note the dropout.
 
 ## Phase C: Cross-judge
 
-After all Phase B candidates complete, choose one model from the `arena cross-judge pool` per Host runtime. If configuration is missing, use `inherit-parent`. Prefer a different model from the parent's when the pool offers one. Spawn one read-only judge subagent on that model. It sees the rubric and the candidates by path label, scores each criterion, and recommends a base with rationale. It runs in parallel with your reading in Phase D. Don't spawn it while candidates are still writing.
+After all Phase B candidates complete, choose one model from the `arena cross-judge pool` per Host runtime. Prefer a different model from the parent's when the pool offers one. Spawn one read-only judge subagent on that model. It sees the rubric and the candidates by path label, scores each criterion, and recommends a base with rationale. It runs in parallel with your reading in Phase D. Don't spawn it while candidates are still writing.
 
 ## Phase D: Pick a base
 

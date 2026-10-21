@@ -66,7 +66,7 @@ node --test scripts/*.test.mjs
 cd skills/poteto-mode/scripts && bun install --frozen-lockfile && bun run test && bun run typecheck
 ```
 
-A release is a version bump in all three plugin manifests: `plugin.json`, `.claude-plugin/plugin.json`, and `.codex-plugin/plugin.json`. The tests fail when they disagree.
+A release is a version bump in all three plugin manifests: `plugin.json`, `.claude-plugin/plugin.json`, and `.codex-plugin/plugin.json`. The tests fail when they disagree, and merging the bump to `main` tags and publishes a GitHub release. [Releasing](docs/releasing.md) covers that and how to try a change before it ships.
 
 ## License
 

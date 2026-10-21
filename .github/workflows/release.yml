@@ -1,0 +1,34 @@
+name: Release
+on:
+  push:
+    branches: [main, next]
+    paths: ['.claude-plugin/plugin.json']
+permissions:
+  contents: write
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Tag and publish the manifest version
+        env:
+          GH_TOKEN: ${{ github.token }}
+          BRANCH: ${{ github.ref_name }}
+          SHA: ${{ github.sha }}
+        run: |
+          version=$(node -p 'require("./.claude-plugin/plugin.json").version')
+          tag="v$version"
+          case "$BRANCH:$version" in
+            main:*-*) echo "::error::main carries prerelease version $version; use a plain x.y.z on main" >&2; exit 1 ;;
+            next:*-*) prerelease=--prerelease ;;
+            next:*) echo "::error::next carries release version $version; use a prerelease such as $version-alpha.1 on next" >&2; exit 1 ;;
+            *) prerelease= ;;
+          esac
+          if gh api "repos/$GITHUB_REPOSITORY/git/ref/tags/$tag" >/dev/null 2>&1; then
+            echo "$tag already exists; bump the version to release again"
+            exit 0
+          fi
+          gh release create "$tag" --target "$SHA" --title "$tag" --generate-notes $prerelease

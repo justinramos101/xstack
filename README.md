@@ -21,19 +21,14 @@ xstack is a port of [pstack](https://github.com/cursor/plugins/tree/main/pstack)
 /plugin install xstack@xstack
 ```
 
-The plugin is the recommended install. It includes the helper agent definitions the workflows use and a hook that tells each session where the skill files live. Most xstack skills are meant to be run by you, not chosen by the model on its own, and Claude Code hides those from the model unless the hook is present.
-
-You can instead copy individual skill folders into `.claude/skills/` for one project or `~/.claude/skills/` for your account. That works for single skills, but the model cannot find the hidden skills without the hook.
-
 ### Codex
 
 ```sh
 codex plugin marketplace add justinramos101/xstack
+codex plugin add xstack@xstack
 ```
 
-Then run `codex plugin add xstack@xstack`, or install xstack from the Plugins interface.
-
-For a skill-only install, copy skill folders into `.agents/skills/` or `~/.agents/skills/`. Create those directories if they do not exist. If you already have a skill with the same name, keep your copy. A skill-only install has no bundled agent prompts, so workflows that need them run inline and say so.
+Or install xstack from the Plugins interface. To copy individual skills instead of installing the plugin, see [Manual install](docs/guide/01-setup.md#manual-install).
 
 ## First task
 
@@ -71,7 +66,7 @@ node --test scripts/*.test.mjs
 cd skills/poteto-mode/scripts && bun install --frozen-lockfile && bun run test && bun run typecheck
 ```
 
-A release is a version bump in all three plugin manifests: `plugin.json`, `.claude-plugin/plugin.json`, and `.codex-plugin/plugin.json`.
+A release is a version bump in all three plugin manifests: `plugin.json`, `.claude-plugin/plugin.json`, and `.codex-plugin/plugin.json`. The tests fail when they disagree.
 
 ## License
 

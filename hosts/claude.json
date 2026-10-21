@@ -1,0 +1,43 @@
+{
+	"manifests": {
+		".claude-plugin/plugin.json": {
+			"displayName": "xstack"
+		}
+	},
+	"argumentHints": {
+		"arena": "[task to run as parallel candidates]",
+		"architect": "[change to design before coding]",
+		"automate-me": "[update, or nothing for a new mode skill]",
+		"benchmark-checklist": "[measurement or speedup to vet]",
+		"blast-radius": "[change or symbol to check]",
+		"correct": "[mistake agents keep making, or nothing to mine history]",
+		"create-formal-verification-skill": "[code and the property to prove]",
+		"create-verification-skill": "[app or surface to drive]",
+		"figure-it-out": "[task and how you will know it is done]",
+		"how": "[question or symbol]",
+		"interrogate": "[branch, PR, diff, or design to challenge]",
+		"poteto-help": "[question]",
+		"poteto-mode": "[task with a done condition]",
+		"recall": "[topic, or nothing for recent work]",
+		"reflect": "[what the session taught, optional]",
+		"setup-xstack": "[budget, optional]",
+		"sharpen": "[prompt to sharpen]",
+		"show-me-your-work": "[task, or \"catch me up\"]",
+		"swarm": "[task, slices or worker count, done predicate]",
+		"tdd": "[bug or behavior to pin with a test]",
+		"teach": "[what to explain]",
+		"technical-writing": "[doc to write or review]",
+		"unslop": "[text, or nothing for the last reply]",
+		"why": "[question or symbol]"
+	},
+	"agents": {
+		"poteto-agent": {
+			"background": "true",
+			"color": "yellow"
+		},
+		"comment-sicko": {
+			"disallowedTools": "Write, NotebookEdit",
+			"color": "red"
+		}
+	}
+}

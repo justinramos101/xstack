@@ -2,24 +2,22 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 
-// The three plugin manifests describe one plugin: the portable root manifest,
-// Claude Code's, and Codex's compatibility fallback. A release bumps all three,
-// and the release workflow tags whatever version lands on main or next.
-const manifests = ['plugin.json', '.claude-plugin/plugin.json', '.codex-plugin/plugin.json']
-  .map(file => [file, JSON.parse(readFileSync(new URL(`../${file}`, import.meta.url), 'utf8'))]);
+const read = file => JSON.parse(readFileSync(new URL(`../${file}`, import.meta.url), 'utf8'));
+const source = read('src/plugin.json');
+const manifests = ['claude/.claude-plugin/plugin.json', 'codex/plugin.json', 'codex/.codex-plugin/plugin.json'].map(file => [file, read(file)]);
 
 // x.y.z with an optional SemVer prerelease such as -alpha.1: dot-separated identifiers, no leading zeros.
 const identifier = String.raw`(?:0|[1-9]\d*|\d*[A-Za-z-][0-9A-Za-z-]*)`;
 const semver = new RegExp(String.raw`^\d+\.\d+\.\d+(?:-${identifier}(?:\.${identifier})*)?$`);
 
-test('the three plugin manifests agree on identity and version', () => {
-  const [, root] = manifests[0];
+test('every generated manifest agrees with src/plugin.json on identity and version', () => {
+  assert.match(source.version, semver, 'src/plugin.json version');
+  assert.equal(read('codex/plugin.json').$schema, 'https://agent-plugins.org/schemas/1.0.0/plugin.schema.json');
+  assert.equal(source.repository, 'https://github.com/justinramos101/xstack');
   for (const [file, manifest] of manifests) {
     for (const field of ['name', 'version', 'description', 'homepage', 'repository', 'license']) {
-      assert.equal(manifest[field], root[field], `${file} ${field}`);
+      assert.equal(manifest[field], source[field], `${file} ${field}`);
     }
-    assert.match(manifest.version, semver, `${file} version`);
-    assert.equal(manifest.repository, 'https://github.com/justinramos101/xstack', `${file} repository`);
   }
 });
 

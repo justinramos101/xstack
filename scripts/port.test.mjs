@@ -4,12 +4,12 @@ import { mkdtempSync, mkdirSync, realpathSync, symlinkSync, readFileSync, writeF
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { spawnSync } from 'node:child_process';
-import { resolveRole } from '../skills/setup-xstack/scripts/models.mjs';
+import { resolveRole } from '../src/skills/setup-xstack/scripts/models.mjs';
 import { validateTrigger } from '../automations/benny/scripts/validate-trigger.mjs';
 
 const root = new URL('../', import.meta.url);
-const checker = new URL('../skills/poteto-mode/scripts/check-plan.mjs', import.meta.url);
-const playbook = readFileSync(new URL('../skills/poteto-mode/playbooks/multi-phase-plan.md', import.meta.url), 'utf8');
+const checker = new URL('../src/skills/poteto-mode/scripts/check-plan.mjs', import.meta.url);
+const playbook = readFileSync(new URL('../src/skills/poteto-mode/playbooks/multi-phase-plan.md', import.meta.url), 'utf8');
 const validPlan = playbook.split('````markdown\n')[1].split('````')[0].replace(/<[^>\n]+>/g, 'example');
 function check(plan) {
   const dir = mkdtempSync(join(tmpdir(), 'xstack-plan-'));
@@ -46,12 +46,12 @@ test('model resolver CLI reads a config from an arbitrary working directory', ()
   try {
     const file = join(dir, 'models.md');
     writeFileSync(file, '## codex\nfeature: alpha @ high\n');
-    const result = spawnSync(process.execPath, [new URL('../skills/setup-xstack/scripts/models.mjs', import.meta.url).pathname, 'codex', 'feature', file], { cwd: dir, encoding: 'utf8' });
+    const result = spawnSync(process.execPath, [new URL('../src/skills/setup-xstack/scripts/models.mjs', import.meta.url).pathname, 'codex', 'feature', file], { cwd: dir, encoding: 'utf8' });
     assert.equal(result.status, 0, result.stderr);
     assert.deepEqual(JSON.parse(result.stdout).entries, [{ model: 'alpha', effort: 'high' }]);
   } finally { rmSync(dir, { recursive: true, force: true }); }
 });
-const models = new URL('../skills/setup-xstack/scripts/models.mjs', import.meta.url).pathname;
+const models = new URL('../src/skills/setup-xstack/scripts/models.mjs', import.meta.url).pathname;
 function modelsCli(home, args, input) {
   const env = { ...process.env, HOME: home, CODEX_HOME: join(home, 'codex-home') };
   return spawnSync(process.execPath, [models, ...args], { env, input, encoding: 'utf8' });
@@ -189,14 +189,14 @@ test('worktree audit handles spaced paths and does not call a closed PR safe', (
     mkdirSync(bin); mkdirSync(transcripts);
     writeFileSync(join(bin, 'gh'), '#!/bin/sh\nprintf \'[{"number":42,"state":"CLOSED","headRefName":"closed-work"}]\\n\'\n', { mode: 0o755 });
     const env = { ...process.env, PATH: `${bin}:${process.env.PATH}`, XSTACK_TRANSCRIPTS_DIR: transcripts };
-    const result = spawnSync('bash', [new URL('../skills/poteto-mode/scripts/worktree-audit.sh', import.meta.url).pathname, repo], { env, encoding: 'utf8' });
+    const result = spawnSync('bash', [new URL('../src/skills/poteto-mode/scripts/worktree-audit.sh', import.meta.url).pathname, repo], { env, encoding: 'utf8' });
     assert.equal(result.status, 0, result.stderr);
     const columns = result.stdout.trim().split('\n')[2].split('\t');
     assert.equal(columns[7], 'review');
     assert.equal(columns[5], '#42/CLOSED');
     assert.equal(columns[8], realpathSync(worktree));
     delete env.XSTACK_TRANSCRIPTS_DIR;
-    const unknown = spawnSync('bash', [new URL('../skills/poteto-mode/scripts/worktree-audit.sh', import.meta.url).pathname, repo], { env, encoding: 'utf8' });
+    const unknown = spawnSync('bash', [new URL('../src/skills/poteto-mode/scripts/worktree-audit.sh', import.meta.url).pathname, repo], { env, encoding: 'utf8' });
     assert.equal(unknown.status, 0, unknown.stderr);
     assert.equal(unknown.stdout.trim().split('\n')[2].split('\t')[7], 'review-chat-unknown');
   } finally { rmSync(dir, { recursive: true, force: true }); }
@@ -220,7 +220,7 @@ test('merged worktree stays unknown when transcript scanning cannot complete', (
     mkdirSync(bin); mkdirSync(transcripts);
     writeFileSync(join(bin, 'gh'), '#!/bin/sh\nprintf "[]\\n"\n', { mode: 0o755 });
     const audit = () => {
-      const result = spawnSync('bash', [new URL('../skills/poteto-mode/scripts/worktree-audit.sh', import.meta.url).pathname, repo], {
+      const result = spawnSync('bash', [new URL('../src/skills/poteto-mode/scripts/worktree-audit.sh', import.meta.url).pathname, repo], {
         env: { ...process.env, PATH: `${bin}:${process.env.PATH}`, XSTACK_TRANSCRIPTS_DIR: transcripts }, encoding: 'utf8',
       });
       assert.equal(result.status, 0, result.stderr);
@@ -245,7 +245,7 @@ test('model resolver CLI works through a symlinked installation', () => {
   const dir = mkdtempSync(join(tmpdir(), 'xstack-model-link-'));
   try {
     const link = join(dir, 'models.mjs');
-    symlinkSync(new URL('../skills/setup-xstack/scripts/models.mjs', import.meta.url), link);
+    symlinkSync(new URL('../src/skills/setup-xstack/scripts/models.mjs', import.meta.url), link);
     const result = spawnSync(process.execPath, [link, 'codex', 'feature', join(dir, 'missing-config.md')], { encoding: 'utf8' });
     assert.equal(result.status, 0, result.stderr);
     assert.deepEqual(JSON.parse(result.stdout).entries, [{ model: null, effort: null }]);

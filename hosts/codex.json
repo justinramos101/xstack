@@ -1,0 +1,21 @@
+{
+	"manifests": {
+		"plugin.json": {
+			"$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+			"extensions": {
+				"com.openai": {
+					"interface": {
+						"displayName": "xstack",
+						"shortDescription": "pstack's rigorous agent workflows, ported to Claude Code and Codex.",
+						"category": "Developer Tools",
+						"logo": "./assets/logo.png"
+					},
+					"onboardingSkill": "./skills/setup-xstack/SKILL.md"
+				}
+			}
+		},
+		".codex-plugin/plugin.json": {
+			"skills": "./skills/"
+		}
+	}
+}

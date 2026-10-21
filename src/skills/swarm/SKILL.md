@@ -21,7 +21,7 @@ Create a visible checklist with one entry per phase before launching anything. U
 
 1. State the done predicate and the artifact or report the swarm must return.
 2. Choose the shape. Partition into slices, race N workers on identical briefs, or mix both. For a race or mixed shape, declare `first pass`, `rank all`, or `best-of` before spawning.
-3. Pick the worker model from `swarm workers` per Host runtime. If configuration is missing, use `inherit-parent`. For `auto` or `inherit-parent`, omit model and effort overrides so the workers run on the parent model. If the host refuses a configured model, run those workers on the parent model and say so. For a model race, name each arm's model up front. Pick each subagent's effort for the job, and fast mode only where the host offers it, per the Subagents section of the **poteto-mode** skill.
+3. Pick the worker model from `swarm workers` per Host runtime. For `auto` or `inherit-parent`, omit model and effort overrides so the workers run on the parent model. If the host refuses a configured model, run those workers on the parent model and say so. For a model race, name each arm's model up front. Pick each subagent's effort for the job, and fast mode only where the host offers it, per the Subagents section of the **poteto-mode** skill.
 4. Give each worker its own writable output when it writes. When workers verify or measure commits, each brief names the exact SHAs. A measurement brief also names the method (sample count, what one sample is, order). The worker records both in its result.
 
 ## Phase B: Fan out

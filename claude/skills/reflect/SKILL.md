@@ -23,19 +23,19 @@ Match workspace and session metadata before reading transcript messages. Transcr
 
 One message, three subagent calls, `subagent_type: general-purpose`, each with a no-writes contract and MCP access kept. Reviewers need MCP access to look up the tickets, chat threads, and observability traces the transcript references. Use the actual host permissions described in Host runtime.
 
-Each reviewer and the synthesizer name a role, resolved per Host runtime, and a default. Omit model and effort overrides when the value is `auto` or `inherit-parent`. If the host refuses a configured model, run that subagent on the parent model and say so. Pick each subagent's effort for the job, and fast mode only where the host offers it, per the Subagents section of the **poteto-mode** skill.
+Each reviewer and the synthesizer name a role, resolved per Host runtime. Omit model and effort overrides when the value is `auto` or `inherit-parent`. If the host refuses a configured model, run that subagent on the parent model and say so. Pick each subagent's effort for the job, and fast mode only where the host offers it, per the Subagents section of the **poteto-mode** skill.
 
-| Lens | Role | Default `model` | Prompt template |
-|---|---|---|---|
-| Judgment | `reflect judgment` | `inherit-parent` | `references/judgment-reviewer.md` |
-| Tooling | `reflect tooling` | `inherit-parent` | `references/tooling-reviewer.md` |
-| Divergent | `divergent` | `inherit-parent` | `references/divergent-reviewer.md` |
+| Lens | Role | Prompt template |
+|---|---|---|
+| Judgment | `reflect judgment` | `references/judgment-reviewer.md` |
+| Tooling | `reflect tooling` | `references/tooling-reviewer.md` |
+| Divergent | `divergent` | `references/divergent-reviewer.md` |
 
 Pass each template verbatim, substituting the transcript path or digest where marked. Reviewers return findings in the subagent response body.
 
 ## 3. Synthesize
 
-One subagent call, `subagent_type: general-purpose`, model from the `synthesizer` role (default `inherit-parent`), with a no-writes contract and MCP access kept. It spot-verifies citations through MCP. Use the actual host permissions described in Host runtime. Pass `references/synthesizer.md` verbatim, with each reviewer's full output inlined where marked. It returns an Accepted / Rejected / Backlog list.
+One subagent call, `subagent_type: general-purpose`, model from the `synthesizer` role, with a no-writes contract and MCP access kept. It spot-verifies citations through MCP. Use the actual host permissions described in Host runtime. Pass `references/synthesizer.md` verbatim, with each reviewer's full output inlined where marked. It returns an Accepted / Rejected / Backlog list.
 
 ## 4. Structural enforcement check
 

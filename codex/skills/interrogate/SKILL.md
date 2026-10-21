@@ -25,16 +25,9 @@ Before spawning reviewers, state the intent in one clear paragraph from the user
 
 ## Step 3, Spawn Reviewers
 
-Launch all reviewers in a single message using the host's subagent tool, one per entry in the `interrogate reviewers` role resolved per Host runtime, labeled Reviewer A, B, and so on to match the entry count. If configuration is missing, use the table defaults.
+Launch all reviewers in a single message using the host's subagent tool, one per entry in the `interrogate reviewers` role resolved per Host runtime, labeled Reviewer A, B, and so on to match the entry count. With no configured line, the role resolves to xstack's default panel for the host.
 
-| Subagent | Default model |
-|----------|---------------|
-| Reviewer A | `inherit-parent` |
-| Reviewer B | `inherit-parent` |
-| Reviewer C | `inherit-parent` |
-| Reviewer D | `inherit-parent` |
-
-Each reviewer is a `general-purpose` subagent with a read-only contract, on its configured entry, or its table default when there is no configured line. Omit model and effort overrides for an `auto` or `inherit-parent` entry, so that reviewer runs on the parent model.
+Each reviewer is a `general-purpose` subagent with a read-only contract, on its resolved entry. Omit model and effort overrides for an `auto` or `inherit-parent` entry, so that reviewer runs on the parent model.
 
 If the host refuses a configured entry, run that reviewer on an inherited worker and report the reduced model diversity. Do not block the review on the model issue. Never treat an alias entry as a refused model or apply this fallback to it.
 

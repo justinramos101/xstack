@@ -13,7 +13,15 @@ xstack needs git and your host. A few workflows need more, and you can add those
 
 ## Pick your models
 
-Invoke `/setup-xstack` through your host's skill interface. It reads the models and efforts your host's subagent tool offers, asks for a reasoning budget, and writes the roles where the host loads them into every new session: `~/.claude/rules/xstack-models.md` in Claude Code, or a marked xstack block in `~/.codex/AGENTS.md` in Codex. The rest of your `AGENTS.md` stays as it was. A role with no model inherits the parent model. Panels always run independent workers, but they gain model diversity only when you configure two or more distinct models.
+Invoke `/setup-xstack` through your host's skill interface. It reads the models and efforts your host's subagent tool offers, asks for a reasoning budget, and writes the roles where the host loads them into every new session: `~/.claude/rules/xstack-models.md` in Claude Code, or a marked xstack block in `~/.codex/AGENTS.md` in Codex. The rest of your `AGENTS.md` stays as it was. Until you run it, every role uses xstack's defaults, mapped from pstack's lineup of a fast coding model and a stronger judgment model, all at xhigh:
+
+| Roles | Claude Code | Codex |
+| --- | --- | --- |
+| feature, refactoring, bug-fix, perf-issue, hillclimb, how explorer, why investigators, reflect tooling, swarm workers | `inherit-parent` | `gpt-6.1-sol @ xhigh` |
+| judgment and prose, hardest tasks, how explainer, why synthesizer, reflect judgment, divergent, synthesizer | `opus @ xhigh` | `gpt-6-astra @ xhigh` |
+| arena runners, arena cross-judge pool, architect runners, interrogate reviewers | `opus @ xhigh, inherit-parent`, twice over | `gpt-6-astra @ xhigh, gpt-6.1-sol @ xhigh`, twice over |
+
+Claude Code has no Grok, so pstack's coding roles run on the session's own model there. Panels always run independent workers, but they gain model diversity only when their entries name distinct models.
 
 A budget sets a reasoning effort target, not a dollar limit:
 

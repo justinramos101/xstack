@@ -1,15 +1,18 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
-import { dirname, join, normalize } from 'node:path';
+import { dirname, join, normalize, relative, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { sharedDocs } from './build.mjs';
 
 // Checks what the README, the guide, and the skills say about the tree: relative
 // links and anchors resolve, slash commands name a real skill, and counts match.
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
-const skills = readdirSync(join(root, 'skills')).filter(name => existsSync(join(root, 'skills', name, 'SKILL.md')));
+const src = join(root, 'src');
+const trees = ['claude', 'codex'].map(dir => join(root, dir));
+const skills = readdirSync(join(src, 'skills')).filter(name => existsSync(join(src, 'skills', name, 'SKILL.md')));
 const principles = skills.filter(name => name.startsWith('principle-'));
-const playbooks = readdirSync(join(root, 'skills/poteto-mode/playbooks')).filter(name => name.endsWith('.md'));
+const playbooks = readdirSync(join(src, 'skills/poteto-mode/playbooks')).filter(name => name.endsWith('.md'));
 // Commands that ship with a host, not with xstack.
 // `url` and `name` are placeholders in templates and the glossary.
 const placeholders = new Set(['url', 'name']);
@@ -23,8 +26,19 @@ function walk(dir) {
   });
 }
 const guide = ['README.md', ...readdirSync(join(root, 'docs/guide')).filter(name => name.endsWith('.md')).map(name => `docs/guide/${name}`)].map(doc => join(root, doc));
-const docs = [...new Set([...guide, ...walk(join(root, 'skills')), ...walk(join(root, 'automations'))])];
+const docs = [...new Set([...guide, ...walk(src), ...walk(join(root, 'automations')), ...trees.flatMap(walk)])];
 const strip = text => text.replace(/^(```|~~~)[\s\S]*?^\1/gm, '');
+const inside = (dir, path) => !relative(dir, path).startsWith('..');
+
+function sharedDocLinkedFromSrc(file, resolved) {
+  if (!inside(src, file) || existsSync(resolved) || !inside(src, resolved)) return undefined;
+  const rel = relative(src, resolved).split(sep).join('/');
+  return sharedDocs.some(doc => rel === doc || rel.startsWith(`${doc}/`)) ? join(root, rel) : undefined;
+}
+function linkTarget(file, path) {
+  const resolved = normalize(join(dirname(file), decodeURI(path)));
+  return sharedDocLinkedFromSrc(file, resolved) ?? resolved;
+}
 
 function anchors(file) {
   const found = new Set();
@@ -46,9 +60,11 @@ test('relative links and anchors resolve', () => {
     for (const [, target] of strip(readFileSync(file, 'utf8')).matchAll(/\]\(<?([^)\s>]+)>?(?:\s+"[^"]*")?\)/g)) {
       if (/^[a-z]+:/i.test(target) || placeholders.has(target)) continue;
       const [path, anchor] = target.split('#');
-      const resolved = path ? normalize(join(dirname(file), decodeURI(path))) : file;
+      const resolved = path ? linkTarget(file, path) : file;
       const where = `${file.slice(root.length + 1)} -> ${target}`;
-      if (!existsSync(resolved)) problems.push(`missing ${where}`);
+      const tree = trees.find(dir => inside(dir, file));
+      if (tree && !inside(tree, resolved)) problems.push(`leaves its tree ${where}`);
+      else if (!existsSync(resolved)) problems.push(`missing ${where}`);
       else if (anchor && resolved.endsWith('.md') && !anchors(resolved).has(anchor)) problems.push(`no anchor ${where}`);
     }
   }
@@ -78,10 +94,11 @@ test('counts in the README and guide match the tree', () => {
 
 test('every skill is named after its folder, and every user-only skill hides from Codex too', () => {
   for (const name of skills) {
-    const text = readFileSync(join(root, 'skills', name, 'SKILL.md'), 'utf8');
+    const text = readFileSync(join(src, 'skills', name, 'SKILL.md'), 'utf8');
     assert.equal(text.match(/^name: (.+)$/m)?.[1], name);
     const hidden = /^disable-model-invocation: true$/m.test(text);
-    const openai = join(root, 'skills', name, 'agents', 'openai.yaml');
-    assert.equal(existsSync(openai) && /allow_implicit_invocation: false/.test(readFileSync(openai, 'utf8')), hidden, name);
+    assert.equal(/^disable-model-invocation: true$/m.test(readFileSync(join(root, 'claude/skills', name, 'SKILL.md'), 'utf8')), hidden, `claude ${name}`);
+    const openai = join(root, 'codex/skills', name, 'agents', 'openai.yaml');
+    assert.equal(existsSync(openai) && /allow_implicit_invocation: false/.test(readFileSync(openai, 'utf8')), hidden, `codex ${name}`);
   }
 });

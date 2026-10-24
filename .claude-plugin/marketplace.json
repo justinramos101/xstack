@@ -7,7 +7,7 @@
 		{
 			"name": "xstack",
 			"source": "./claude",
-			"description": "pstack's rigorous agent workflows, ported to Claude Code and Codex."
+			"description": "pstack's rigorous agent workflows, ported to Claude Code, Codex, and Hermes Agent."
 		},
 		{
 			"name": "xstack-next",
@@ -21,6 +21,6 @@
 		}
 	],
 	"metadata": {
-		"description": "xstack engineering workflows for Claude Code and Codex, ported from pstack."
+		"description": "xstack engineering workflows for Claude Code, Codex, and Hermes Agent, ported from pstack."
 	}
 }

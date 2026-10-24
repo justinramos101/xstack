@@ -30,7 +30,7 @@ test('unconfigured roles take each host\'s default lineup', () => {
   assert.deepEqual(resolveRole('feature: inherit-parent\n', 'codex', 'feature').entries, [{ model: null, effort: null }]);
 });
 test('every default resolves and the default draft round-trips through write', () => {
-  for (const host of ['claude', 'codex']) {
+  for (const host of ['claude', 'codex', 'hermes']) {
     for (const role of roles) assert.doesNotThrow(() => resolveRole(defaultDraft(host), host, role));
   }
   const home = mkdtempSync(join(tmpdir(), 'xstack-home-'));
@@ -72,9 +72,25 @@ test('model resolver CLI reads a config from an arbitrary working directory', ()
 });
 const models = new URL('../src/skills/setup-xstack/scripts/models.mjs', import.meta.url).pathname;
 function modelsCli(home, args, input) {
-  const env = { ...process.env, HOME: home, CODEX_HOME: join(home, 'codex-home') };
+  const env = { ...process.env, HOME: home, CODEX_HOME: join(home, 'codex-home'), HERMES_HOME: join(home, 'hermes-home') };
   return spawnSync(process.execPath, [models, ...args], { env, input, encoding: 'utf8' });
 }
+
+test('every Hermes role inherits by default, and Hermes roles round-trip through HERMES_HOME', () => {
+  for (const role of roles) assert.ok(resolveRole('', 'hermes', role).entries.every(entry => entry.model === null && entry.effort === null), role);
+  const home = mkdtempSync(join(tmpdir(), 'xstack-home-'));
+  try {
+    assert.match(modelsCli(home, ['read', 'hermes']).stderr, /no config; showing xstack's defaults for hermes/);
+    const written = modelsCli(home, ['write', 'hermes'], '# budget: small\n## codex\nfeature: gpt-6.1-sol\n## hermes\nfeature: some-model @ high\n');
+    assert.equal(written.status, 0, written.stderr);
+    assert.equal(written.stdout.trim(), join(home, 'hermes-home', 'xstack-models.md'));
+    const text = readFileSync(join(home, 'hermes-home', 'xstack-models.md'), 'utf8');
+    assert.match(text, /^# xstack model roles for Hermes Agent\./);
+    assert.doesNotMatch(text, /gpt-6\.1-sol/);
+    assert.deepEqual(JSON.parse(modelsCli(home, ['hermes', 'feature']).stdout).entries, [{ model: 'some-model', effort: 'medium' }]);
+    assert.deepEqual(JSON.parse(modelsCli(home, ['hermes', 'hardest tasks']).stdout).entries, [{ model: null, effort: null }]);
+  } finally { rmSync(home, { recursive: true, force: true }); }
+});
 
 test('write puts Claude roles in an always-loaded rule and resolves them back', () => {
   const home = mkdtempSync(join(tmpdir(), 'xstack-home-'));

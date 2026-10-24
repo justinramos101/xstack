@@ -19,6 +19,13 @@ test('every generated manifest agrees with src/plugin.json on identity and versi
       assert.equal(manifest[field], source[field], `${file} ${field}`);
     }
   }
+  // Every plugin.yaml value is written as JSON, so each line parses on its own.
+  const hermes = Object.fromEntries(readFileSync(new URL('../hermes/plugin.yaml', import.meta.url), 'utf8').trimEnd().split('\n').map(line => {
+    const [, key, value] = line.match(/^([a-z_]+): (.+)$/);
+    return [key, JSON.parse(value)];
+  }));
+  for (const field of ['name', 'version', 'description', 'homepage', 'license']) assert.equal(hermes[field], source[field], `hermes/plugin.yaml ${field}`);
+  assert.deepEqual(hermes.tags, source.keywords);
 });
 
 test('the version pattern accepts SemVer prereleases and rejects malformed ones', () => {

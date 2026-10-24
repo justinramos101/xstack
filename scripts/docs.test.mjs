@@ -9,7 +9,7 @@ import { sharedDocs } from './build.mjs';
 // links and anchors resolve, slash commands name a real skill, and counts match.
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const src = join(root, 'src');
-const trees = ['claude', 'codex'].map(dir => join(root, dir));
+const trees = ['claude', 'codex', 'hermes'].map(dir => join(root, dir));
 const skills = readdirSync(join(src, 'skills')).filter(name => existsSync(join(src, 'skills', name, 'SKILL.md')));
 const principles = skills.filter(name => name.startsWith('principle-'));
 const playbooks = readdirSync(join(src, 'skills/poteto-mode/playbooks')).filter(name => name.endsWith('.md'));
@@ -74,7 +74,7 @@ test('relative links and anchors resolve', () => {
 test('slash commands in the README and guide name a real skill', () => {
   const problems = [];
   for (const file of guide) {
-    for (const [, name] of readFileSync(file, 'utf8').matchAll(/(?<=^|[\s`(|"'>])\/([a-z][a-z0-9-]*)(?![\w/<.-])/gm)) {
+    for (const [, name] of readFileSync(file, 'utf8').matchAll(/(?<=^|[\s`(|"'>])\/(?:xstack:)?([a-z][a-z0-9-]*)(?![\w/<.:-])/gm)) {
       if (!skills.includes(name) && !external.has(name) && !placeholders.has(name)) problems.push(`${file.slice(root.length + 1)}: /${name}`);
     }
   }
@@ -92,7 +92,7 @@ test('counts in the README and guide match the tree', () => {
   assert.deepEqual(problems, []);
 });
 
-test('every skill is named after its folder, and every user-only skill hides from Codex too', () => {
+test('every skill is named after its folder, and every user-only skill hides from Codex and Hermes too', () => {
   for (const name of skills) {
     const text = readFileSync(join(src, 'skills', name, 'SKILL.md'), 'utf8');
     assert.equal(text.match(/^name: (.+)$/m)?.[1], name);
@@ -100,5 +100,6 @@ test('every skill is named after its folder, and every user-only skill hides fro
     assert.equal(/^disable-model-invocation: true$/m.test(readFileSync(join(root, 'claude/skills', name, 'SKILL.md'), 'utf8')), hidden, `claude ${name}`);
     const openai = join(root, 'codex/skills', name, 'agents', 'openai.yaml');
     assert.equal(existsSync(openai) && /allow_implicit_invocation: false/.test(readFileSync(openai, 'utf8')), hidden, `codex ${name}`);
+    assert.equal(/^disable-model-invocation: true$/m.test(readFileSync(join(root, 'hermes/skills', name, 'SKILL.md'), 'utf8')), hidden, `hermes ${name}`);
   }
 });

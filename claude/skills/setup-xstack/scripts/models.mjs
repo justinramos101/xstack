@@ -14,6 +14,9 @@ const fastRoles = ['feature', 'refactoring', 'bug-fix', 'perf-issue', 'hillclimb
 const lineups = {
   claude: { fast: 'inherit-parent', strong: 'opus @ xhigh' },
   codex: { fast: 'gpt-6.1-sol @ xhigh', strong: 'gpt-6-astra @ xhigh' },
+  // Hermes's delegate_task takes no per-spawn model or effort; children run on the
+  // configured delegation model, else the parent's, so every role inherits.
+  hermes: { fast: 'inherit-parent', strong: 'inherit-parent' },
 };
 export const defaults = Object.fromEntries(Object.entries(lineups).map(([host, { fast, strong }]) => [
   host,
@@ -22,14 +25,18 @@ export const defaults = Object.fromEntries(Object.entries(lineups).map(([host, {
 const efforts = new Set(['low', 'medium', 'high', 'xhigh', 'max', 'ultra']);
 const START = '<!-- xstack-models:start -->';
 const END = '<!-- xstack-models:end -->';
-const hostNames = { claude: 'Claude Code', codex: 'Codex' };
+const hostNames = { claude: 'Claude Code', codex: 'Codex', hermes: 'Hermes Agent' };
 
 // Claude Code loads every ~/.claude/rules/*.md into each session. Codex has no
 // such folder, so its roles live in a marked block of the global instructions
 // file it loads: AGENTS.override.md when that file has content, else AGENTS.md.
+// Hermes has no global rules file, so its roles get a file of their own that
+// workflows resolve through this script.
+const wholeFile = host => host === 'claude' || host === 'hermes';
 export function destination(host) {
   checkHost(host);
   if (host === 'claude') return join(homedir(), '.claude', 'rules', 'xstack-models.md');
+  if (host === 'hermes') return join(process.env.HERMES_HOME || join(homedir(), '.hermes'), 'xstack-models.md');
   const home = process.env.CODEX_HOME || join(homedir(), '.codex');
   const override = join(home, 'AGENTS.override.md');
   return existsSync(override) && readFileSync(override, 'utf8').trim() ? override : join(home, 'AGENTS.md');
@@ -38,11 +45,11 @@ export function destination(host) {
 export const legacyFile = () => join(homedir(), '.agents', 'xstack-models.md');
 
 function checkHost(host) {
-  if (!Object.hasOwn(hostNames, host)) throw new Error('Host must be claude or codex');
+  if (!Object.hasOwn(hostNames, host)) throw new Error('Host must be claude, codex, or hermes');
 }
 
 function parse(source) {
-  const sections = { shared: new Map(), claude: new Map(), codex: new Map() };
+  const sections = { shared: new Map(), claude: new Map(), codex: new Map(), hermes: new Map() };
   let section = 'shared';
   for (const line of source.split(/\r?\n/)) {
     if (line.trim() === START || line.trim() === END) continue;
@@ -109,7 +116,7 @@ export function readConfig(host) {
   const file = destination(host);
   if (existsSync(file)) {
     const text = readFileSync(file, 'utf8');
-    const source = host === 'claude' ? text : extractBlock(text);
+    const source = wholeFile(host) ? text : extractBlock(text);
     if (source !== null) return { source, from: file };
   }
   if (existsSync(legacyFile())) return { source: readFileSync(legacyFile(), 'utf8'), from: legacyFile() };
@@ -153,7 +160,7 @@ function writeAtomic(file, text) {
 export function writeConfig(host, draft) {
   const body = render(host, draft);
   const file = destination(host);
-  if (host === 'claude') {
+  if (wholeFile(host)) {
     writeAtomic(file, body);
     return file;
   }
@@ -188,7 +195,7 @@ if (process.argv[1] && import.meta.url === pathToFileURL(realpathSync(process.ar
       const source = file ? extractBlock(text) ?? text : readConfig(host).source;
       console.log(JSON.stringify(resolveRole(source, host, role)));
     } else {
-      throw new Error('Usage: models.mjs <claude|codex> "<role>" [config-file] | read <host> | write <host> [draft-file]');
+      throw new Error('Usage: models.mjs <claude|codex|hermes> "<role>" [config-file] | read <host> | write <host> [draft-file]');
     }
   } catch (error) {
     console.error(error.message);

@@ -1,8 +1,8 @@
 # xstack
 
-xstack is a plugin for Claude Code and Codex. It gives the agent a set of working habits: understand the code before editing it, design before building, prove the change on the real app, and ship small reviewable pull requests. You describe a goal in plain words. The agent picks a playbook for it, runs the steps, and reports back with evidence.
+xstack is a plugin for Claude Code, Codex, and Hermes Agent. It gives the agent a set of working habits: understand the code before editing it, design before building, prove the change on the real app, and ship small reviewable pull requests. You describe a goal in plain words. The agent picks a playbook for it, runs the steps, and reports back with evidence.
 
-xstack is a port of [pstack](https://github.com/cursor/plugins/tree/main/pstack), a Cursor plugin by Lauren Tan. pstack runs only inside Cursor. xstack carries the same skills, playbooks, and principles to Claude Code and Codex.
+xstack is a port of [pstack](https://github.com/cursor/plugins/tree/main/pstack), a Cursor plugin by Lauren Tan. pstack runs only inside Cursor. xstack carries the same skills, playbooks, and principles to Claude Code, Codex, and Hermes Agent.
 
 ## What you get
 
@@ -28,18 +28,26 @@ codex plugin marketplace add justinramos101/xstack
 codex plugin add xstack@xstack
 ```
 
-Or install xstack from the Plugins interface. To copy individual skills instead of installing the plugin, see [Manual install](docs/guide/01-setup.md#manual-install).
+Or install xstack from the Plugins interface.
+
+### Hermes Agent
+
+```sh
+hermes plugins install justinramos101/xstack/hermes --enable
+```
+
+Hermes namespaces plugin skills, so invoke them as `/xstack:poteto-mode`, `/xstack:how`, and so on, in the CLI, TUI, or desktop app. Where slash skills aren't offered, such as `hermes chat -q` or a messaging platform, name the skill in your message instead: "use xstack:poteto-mode to ...". Start a new session after installing so the skills load. To copy individual skills instead of installing the plugin, see [Manual install](docs/guide/01-setup.md#manual-install).
 
 ## First task
 
-1. Run `setup-xstack`. It reads the models your host's subagent tool offers, asks for a reasoning budget, and writes the roles where the host loads them into every new session: `~/.claude/rules/xstack-models.md` in Claude Code, or a marked xstack block in `~/.codex/AGENTS.md` in Codex.
+1. Run `setup-xstack`. It reads the models your host's subagent tool offers, asks for a reasoning budget, and writes the roles where the host loads them into every new session: `~/.claude/rules/xstack-models.md` in Claude Code, a marked xstack block in `~/.codex/AGENTS.md` in Codex, or `~/.hermes/xstack-models.md` in Hermes Agent, where workflows read it on demand. Hermes runs every subagent on one configured model, so its roles all default to the session's model.
 2. Run `poteto-mode` with a concrete task and a way to tell when it's done:
 
 ```text
 /poteto-mode the export writes duplicate rows when a retry lands mid-run. repro first, then fix and verify.
 ```
 
-Invoke `poteto-mode` by name with your task in the same message, so the skill is attached to it. Claude Code invokes skills as slash commands. Codex also accepts `$poteto-mode`, or any `$skill-name`. Stuck, or unsure which skill fits? Run `/poteto-help`. The [guide](docs/guide/README.md) walks through a first task, verification, and overnight runs, and has a [glossary](docs/guide/README.md#glossary) for the terms the workflows use.
+Invoke `poteto-mode` by name with your task in the same message, so the skill is attached to it. Claude Code invokes skills as slash commands. Codex also accepts `$poteto-mode`, or any `$skill-name`. Hermes Agent takes `/xstack:poteto-mode`. Stuck, or unsure which skill fits? Run `/poteto-help`. The [guide](docs/guide/README.md) walks through a first task, verification, and overnight runs, and has a [glossary](docs/guide/README.md#glossary) for the terms the workflows use.
 
 ## What each workflow needs
 
@@ -50,7 +58,7 @@ Most of xstack needs nothing beyond git and your host. A few workflows lean on o
 | Open pull requests | GitHub CLI (`gh`), logged in. If the [Origin](https://cursor.com/docs/origin) CLI is installed and can resolve the repository, the PR workflows use it instead of `gh`. |
 | Babysit or ship pull requests on GitHub | `gh` plus [Bun](https://bun.sh), which runs the bundled PR watcher. On Origin the workflows call the `origin` CLI directly and need no Bun. |
 | Run the Orchestrate playbook, a multi-day program with many stacked PRs | `gh`, or the `origin` CLI on Origin, plus Bun. Orchestrate reads the order of a PR stack by walking the PR base chain through the forge, and keeps its bookkeeping with a bundled Bun script. No workflow needs Graphite. |
-| Leave a task running overnight | A scheduler or watcher that survives the session. Claude Code has `/loop`. Without a persistent runner, the loop stops when the session ends. |
+| Leave a task running overnight | A scheduler or watcher that survives the session. Claude Code has `/loop`. Hermes Agent has cron jobs. Without a persistent runner, the loop stops when the session ends. |
 | Verify a change in a UI | A way to drive the app: a browser, a native-app driver, or a CLI. `/create-verification-skill` writes one for your project. |
 | Formally verify a property | A verifier the project's developers can install, such as TLA+ for ordering bugs. `/create-formal-verification-skill` picks one and says why. |
 | Run Benny | A Slack app, an event runner, credentials, and your explicit authorization. See the [Benny README](automations/benny/README.md). |
@@ -59,12 +67,13 @@ When a bundled helper agent or model is missing, the workflow says so and uses w
 
 ## Contributing
 
-xstack tracks pstack release by release. The pinned upstream revision is in [docs/upstream.json](docs/upstream.json). Edit skills and agents under `src/`, and host-only data under `hosts/`. Then render the Claude Code and Codex plugin trees in `claude/` and `codex/`, commit them with the change, and run the tests before opening a PR:
+xstack tracks pstack release by release. The pinned upstream revision is in [docs/upstream.json](docs/upstream.json). Edit skills and agents under `src/`, and host-only data under `hosts/`. Then render the Claude Code, Codex, and Hermes Agent plugin trees in `claude/`, `codex/`, and `hermes/`, commit them with the change, and run the tests before opening a PR:
 
 ```sh
 node scripts/build.mjs
 node --test scripts/*.test.mjs
 claude plugin validate --strict ./claude
+hermes plugins doctor ./hermes --ci
 cd src/skills/poteto-mode/scripts && bun install --frozen-lockfile && bun run test && bun run typecheck
 ```
 

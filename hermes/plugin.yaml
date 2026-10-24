@@ -1,0 +1,9 @@
+name: "xstack"
+version: "0.7.0"
+description: "pstack's rigorous agent workflows, ported to Claude Code, Codex, and Hermes Agent. Write less, but higher quality code."
+author: "Justin Ramos"
+license: "MIT"
+homepage: "https://github.com/justinramos101/xstack"
+tags: ["xstack", "pstack", "poteto-mode", "workflow", "principles", "subagents", "unslop"]
+provides_tools: []
+provides_hooks: []

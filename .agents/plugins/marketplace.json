@@ -14,7 +14,7 @@
 				"installation": "AVAILABLE"
 			},
 			"category": "Developer Tools",
-			"description": "pstack's rigorous agent workflows, ported to Claude Code and Codex."
+			"description": "pstack's rigorous agent workflows, ported to Claude Code, Codex, and Hermes Agent."
 		}
 	]
 }

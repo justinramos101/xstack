@@ -84,6 +84,40 @@ test('Codex skills keep only name and description, and the invocation flag becom
   assert.match(read(claude, 'skills/hidden/SKILL.md'), /^icon: crown\ncolor: yellow\npaths: \["\*\*\/\*\.ts"\]$/m);
 });
 
+test('Hermes renders a native plugin that keeps the invocation flag and Markdown agents', () => {
+  const hidden = skill('hidden', 'name: hidden\ndescription: "a: b"\ndisable-model-invocation: true\nicon: crown\npaths: ["**/*.ts"]', 'Run `node <this skill directory>/x.mjs`.\n');
+  const agent = { name: 'helper', description: 'h', body: '\nRead <skill file hidden> first.\n' };
+  const hermes = render(hosts.hermes, source({ skills: [hidden], agents: [agent] }));
+  assert.equal(read(hermes, 'skills/hidden/SKILL.md'), '---\nname: hidden\ndescription: "a: b"\ndisable-model-invocation: true\n---\nRun `node <this skill directory>/x.mjs`.\n');
+  assert.match(read(hermes, 'agents/helper.md'), /^---\nname: helper\ndescription: h\n---\n\nRead the absolute path your parent gave you, else the `xstack:hidden` skill loaded with `skill_view`, else `skills\/hidden\/SKILL\.md` under the xstack plugin directory, `\$\{HERMES_HOME:-~\/\.hermes\}\/plugins\/xstack` first\.\n$/);
+  assert.equal(read(hermes, 'plugin.yaml'), 'name: "xstack"\nversion: "9.9.9"\ndescription: "d"\nprovides_tools: []\nprovides_hooks: []\n');
+  assert.ok(hermes.has('__init__.py'));
+});
+
+test('the committed Hermes plugin registers every skill and describes only the model-invocable ones', t => {
+  const probe = spawnSync('python3', ['-I', '-c', 'import yaml'], { encoding: 'utf8' });
+  if (probe.status !== 0) return t.skip('python3 with PyYAML, which Hermes bundles, is not available');
+  const script = [
+    'import importlib.util, json, sys',
+    'spec = importlib.util.spec_from_file_location("xstack_hermes", sys.argv[1])',
+    'module = importlib.util.module_from_spec(spec); spec.loader.exec_module(module)',
+    'class Ctx:',
+    '    def __init__(self): self.skills = {}',
+    '    def register_skill(self, name, path, description=""): self.skills[name] = description',
+    'ctx = Ctx(); module.register(ctx)',
+    'print(json.dumps(ctx.skills))',
+  ].join('\n');
+  const result = spawnSync('python3', ['-I', '-c', script, join(repo, 'hermes/__init__.py')], { encoding: 'utf8' });
+  assert.equal(result.status, 0, result.stderr);
+  const registered = JSON.parse(result.stdout);
+  const { skills } = loadSource();
+  assert.deepEqual(Object.keys(registered).sort(), skills.map(s => s.name).sort());
+  for (const s of skills) {
+    const userOnly = s.frontmatter.some(([key, line]) => key === 'disable-model-invocation' && /:\s*true\b/.test(line));
+    assert.equal(registered[s.name] === '', userOnly, s.name);
+  }
+});
+
 test('agents render as Claude frontmatter in host order and as Codex TOML that round-trips', () => {
   const [name, fields] = Object.entries(claudeData.agents)[0];
   const body = '\n# Title\n\nQuotes """ and """" and a \\ backslash, a \\n literal, a\ttab, \u0001 control, and "quoted".\nEnds with a quote "\n';
@@ -130,7 +164,7 @@ test('diff names stale, missing, extra, and mode-changed files, and write conver
   } finally { rmSync(dir, { recursive: true, force: true }); }
 });
 
-test('the committed claude/ and codex/ trees match a fresh build', () => {
+test('the committed claude/, codex/, and hermes/ trees match a fresh build', () => {
   const result = spawnSync(process.execPath, [new URL('build.mjs', import.meta.url).pathname, '--check'], { encoding: 'utf8' });
   assert.equal(result.status, 0, result.stderr);
 });

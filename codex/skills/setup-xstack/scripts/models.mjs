@@ -22,6 +22,9 @@ export const defaults = Object.fromEntries(Object.entries(lineups).map(([host, {
   host,
   Object.fromEntries(roles.map(role => [role, panels.has(role) ? `${strong}, ${fast}, ${strong}, ${fast}` : fastRoles.includes(role) ? fast : strong])),
 ]));
+// On Hermes a role names a delegation route (an advanced-delegation model_map option, passed
+// as a task's \`option\`), and the route carries its own model and reasoning effort.
+const hermesEffort = 'Hermes sets reasoning effort on each delegation route, not per role. Drop the @ effort and the budget, and set reasoning_effort on the route with `hermes delegation config`.';
 const efforts = new Set(['low', 'medium', 'high', 'xhigh', 'max', 'ultra']);
 const START = '<!-- xstack-models:start -->';
 const END = '<!-- xstack-models:end -->';
@@ -83,11 +86,17 @@ export function resolveRole(source, host, role) {
   const sections = parse(source);
   const values = new Map([...sections.shared, ...sections[host]]);
   const budget = values.get('budget') ?? 'unlimited';
+  if (host === 'hermes' && budget !== 'unlimited') throw new Error(hermesEffort);
   const entries = (values.get(role) ?? defaults[host][role]).split(',').map(value => {
     const match = value.trim().match(/^([\w.-]+)(?:\s*@\s*([\w]+))?$/);
     if (!match || (match[2] && !efforts.has(match[2]))) throw new Error(`Invalid model entry: ${value}`);
     const model = match[1];
-    if (model === 'inherit-parent' || model === 'auto') return { model: null, effort: null };
+    const inherit = model === 'inherit-parent' || model === 'auto';
+    if (host === 'hermes') {
+      if (match[2]) throw new Error(hermesEffort);
+      return { option: inherit ? null : model };
+    }
+    if (inherit) return { model: null, effort: null };
     const target = budgets[budget];
     const chosen = match[2] ?? null;
     const ladder = [...efforts];
@@ -119,7 +128,8 @@ export function readConfig(host) {
     const source = wholeFile(host) ? text : extractBlock(text);
     if (source !== null) return { source, from: file };
   }
-  if (existsSync(legacyFile())) return { source: readFileSync(legacyFile(), 'utf8'), from: legacyFile() };
+  // The legacy file predates Hermes and names other hosts' models, so Hermes never reads it.
+  if (host !== 'hermes' && existsSync(legacyFile())) return { source: readFileSync(legacyFile(), 'utf8'), from: legacyFile() };
   return { source: '', from: null };
 }
 
@@ -130,11 +140,20 @@ export function render(host, draft) {
   const sections = parse(draft);
   const values = new Map([...sections.shared, ...sections[host]]);
   const budget = values.get('budget') ?? 'unlimited';
+  if (host === 'hermes' && budget !== 'unlimited') throw new Error(hermesEffort);
   const lines = [];
   for (const role of roles) {
     if (!values.has(role)) continue;
     resolveRole(`${role}: ${values.get(role)}`, host, role);
     lines.push(`${role}: ${values.get(role).trim()}`);
+  }
+  if (host === 'hermes') {
+    return [
+      '# xstack model roles for Hermes Agent. Written by setup-xstack; rerun it to change them.',
+      '# Each entry names a delegation route: a model_map option from the advanced-delegation plugin. When a skill spawns a subagent for a role, set that task\'s `option` to the route. `inherit-parent` or `auto`: omit `option`, so the subagent runs on the default route, else this session\'s model. Effort lives on the route.',
+      '# arena runners, architect runners, and interrogate reviewers spawn one subagent per entry. arena cross-judge pool lists alternatives for arena\'s one judge. A role with no line uses xstack\'s default, which `models.mjs hermes "<role>"` in the setup-xstack skill prints.',
+      ...lines,
+    ].join('\n') + '\n';
   }
   const cap = budgets[budget]
     ? `caps each entry's effort at ${budgets[budget]} and gives an entry without an effort ${budgets[budget]}`

@@ -131,7 +131,7 @@ Principles are one-rule skills that `/poteto-mode` reads and cites in its replie
 |---|---|
 | The mode stopped applying after a few turns | It faded as the chat grew or after compaction. Start each task with `/poteto-mode`. |
 | A question got treated as the next step of the last task | Say "new task", or say the turn doesn't need the mode. |
-| A new model choice had no effect | Check that `/setup-xstack` wrote the host's roles (`~/.claude/rules/xstack-models.md` on Claude Code, the xstack block in `~/.codex/AGENTS.md` on Codex), that the session started after the write, and that the host's spawn tool lists that model and effort. Hermes Agent picks every subagent's model from `delegation.model` in its config, not per role. A role the host can't run falls back to the parent model. |
+| A new model choice had no effect | Check that `/setup-xstack` wrote the host's roles (`~/.claude/rules/xstack-models.md` on Claude Code, the xstack block in `~/.codex/AGENTS.md` on Codex), that the session started after the write, and that the host's spawn tool lists that model and effort. In Hermes Agent, check that the role names a route `hermes delegation config` lists and that the session started after the route was created. A role the host can't run falls back to the parent model. |
 | Runs cost more than expected | See the cost paragraph under Get set up. |
 | A skill didn't load on its own | Only `/setup-xstack` loads from the user's words. The others load when the user types them or when `/poteto-mode` runs them, and it doesn't run every skill. |
 | Parallel agents overwrote each other | Give each agent its own worktree and explicit file ownership. |

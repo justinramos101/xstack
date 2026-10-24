@@ -76,19 +76,25 @@ function modelsCli(home, args, input) {
   return spawnSync(process.execPath, [models, ...args], { env, input, encoding: 'utf8' });
 }
 
-test('every Hermes role inherits by default, and Hermes roles round-trip through HERMES_HOME', () => {
-  for (const role of roles) assert.ok(resolveRole('', 'hermes', role).entries.every(entry => entry.model === null && entry.effort === null), role);
+test('Hermes roles name delegation routes, inherit by default, and round-trip through HERMES_HOME', () => {
+  for (const role of roles) assert.ok(resolveRole('', 'hermes', role).entries.every(entry => entry.option === null), role);
+  assert.deepEqual(resolveRole('interrogate reviewers: deep, fast, alt, inherit-parent\n', 'hermes', 'interrogate reviewers').entries, [{ option: 'deep' }, { option: 'fast' }, { option: 'alt' }, { option: null }]);
+  for (const source of ['feature: deep @ high\n', '# budget: small\nfeature: deep\n']) assert.throws(() => resolveRole(source, 'hermes', 'feature'), /effort on each delegation route/);
   const home = mkdtempSync(join(tmpdir(), 'xstack-home-'));
   try {
+    mkdirSync(join(home, '.agents'));
+    writeFileSync(join(home, '.agents', 'xstack-models.md'), 'feature: opus @ xhigh\n');
     assert.match(modelsCli(home, ['read', 'hermes']).stderr, /no config; showing xstack's defaults for hermes/);
-    const written = modelsCli(home, ['write', 'hermes'], '# budget: small\n## codex\nfeature: gpt-6.1-sol\n## hermes\nfeature: some-model @ high\n');
+    assert.notEqual(modelsCli(home, ['write', 'hermes'], '# budget: small\nfeature: fast\n').status, 0);
+    const written = modelsCli(home, ['write', 'hermes'], '## codex\nfeature: gpt-6.1-sol\n## hermes\nfeature: fast\narena runners: deep, fast\n');
     assert.equal(written.status, 0, written.stderr);
     assert.equal(written.stdout.trim(), join(home, 'hermes-home', 'xstack-models.md'));
     const text = readFileSync(join(home, 'hermes-home', 'xstack-models.md'), 'utf8');
     assert.match(text, /^# xstack model roles for Hermes Agent\./);
-    assert.doesNotMatch(text, /gpt-6\.1-sol/);
-    assert.deepEqual(JSON.parse(modelsCli(home, ['hermes', 'feature']).stdout).entries, [{ model: 'some-model', effort: 'medium' }]);
-    assert.deepEqual(JSON.parse(modelsCli(home, ['hermes', 'hardest tasks']).stdout).entries, [{ model: null, effort: null }]);
+    assert.doesNotMatch(text, /gpt-6\.1-sol|# budget/);
+    assert.deepEqual(JSON.parse(modelsCli(home, ['hermes', 'feature']).stdout).entries, [{ option: 'fast' }]);
+    assert.deepEqual(JSON.parse(modelsCli(home, ['hermes', 'arena runners']).stdout).entries, [{ option: 'deep' }, { option: 'fast' }]);
+    assert.deepEqual(JSON.parse(modelsCli(home, ['hermes', 'hardest tasks']).stdout).entries, [{ option: null }]);
   } finally { rmSync(home, { recursive: true, force: true }); }
 });
 

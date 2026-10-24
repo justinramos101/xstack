@@ -40,7 +40,7 @@ Hermes namespaces plugin skills, so invoke them as `/xstack:poteto-mode`, `/xsta
 
 ## First task
 
-1. Run `setup-xstack`. It reads the models your host's subagent tool offers, asks for a reasoning budget, and writes the roles where the host loads them into every new session: `~/.claude/rules/xstack-models.md` in Claude Code, a marked xstack block in `~/.codex/AGENTS.md` in Codex, or `~/.hermes/xstack-models.md` in Hermes Agent, where workflows read it on demand. Hermes runs every subagent on one configured model, so its roles all default to the session's model.
+1. Run `setup-xstack`. It reads the models your host's subagent tool offers, asks for a reasoning budget, and writes the roles where the host loads them into every new session: `~/.claude/rules/xstack-models.md` in Claude Code, a marked xstack block in `~/.codex/AGENTS.md` in Codex, or `~/.hermes/xstack-models.md` in Hermes Agent, where workflows read it on demand. In Hermes, roles name delegation routes you define, such as `fast` and `deep`, so swapping models is a Hermes config change. See [Pick your models](docs/guide/01-setup.md#pick-your-models).
 2. Run `poteto-mode` with a concrete task and a way to tell when it's done:
 
 ```text

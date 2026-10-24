@@ -21,7 +21,7 @@ Invoke `/setup-xstack` through your host's skill interface. It reads the models 
 | judgment and prose, hardest tasks, how explainer, why synthesizer, reflect judgment, divergent, synthesizer | `opus @ xhigh` | `gpt-6-astra @ xhigh` | `inherit-parent` |
 | arena runners, arena cross-judge pool, architect runners, interrogate reviewers | `opus @ xhigh, inherit-parent`, twice over | `gpt-6-astra @ xhigh, gpt-6.1-sol @ xhigh`, twice over | `inherit-parent`, four times |
 
-Claude Code has no Grok, so pstack's coding roles run on the session's own model there. Hermes Agent's subagent tool takes no model, so every subagent runs on `delegation.model` from your Hermes config, or on the session's model when that is unset. Set it with `hermes config set delegation.model <model>`. Panels always run independent workers, but they gain model diversity only when their entries name distinct models.
+Claude Code has no Grok, so pstack's coding roles run on the session's own model there. Hermes Agent's defaults inherit because xstack can't guess your models; see [Model routes in Hermes Agent](#model-routes-in-hermes-agent). Panels always run independent workers, but they gain model diversity only when their entries name distinct models.
 
 A budget sets a reasoning effort target, not a dollar limit:
 
@@ -37,6 +37,19 @@ Not every host and model supports every effort. When the target is unsupported, 
 The [host runtime](../../skills/poteto-mode/references/host-runtime.md) defines model resolution, agent fallbacks, local worktrees, transcript lookup, and scheduling. Each workflow reads that file when you invoke the workflow directly. Claude Code and Codex may expose different tool names and limits.
 
 You only override what you care about. To change a role later, rerun `/setup-xstack`. The new roles apply to new sessions. If you set up an earlier xstack, setup reads your old `~/.agents/xstack-models.md` once and moves this host's roles over. Delete the old file after you've run setup on both hosts.
+
+### Model routes in Hermes Agent
+
+Hermes works with almost any model, so xstack doesn't name Hermes models. A Hermes role names a *route* instead: a named entry in your Hermes config that fixes a provider, a model, and a reasoning effort. The official `advanced-delegation` plugin provides them:
+
+```sh
+hermes plugins install advanced-delegation --enable
+hermes delegation config
+```
+
+Create a fast coding route and a stronger judgment route, such as `fast` and `deep`, and for real panel diversity a third on another vendor, such as `alt`. Start a new session, then run `/xstack:setup-xstack`. It reads the route names from the subagent tool and maps each role to one, for example `feature: fast`, `hardest tasks: deep`, and `interrogate reviewers: deep, fast, alt, fast`. To change models later, edit the routes. xstack's roles stay as they are. Effort is set on each route, so Hermes has no budget step. Each subagent's result names the model it actually ran on.
+
+Without routes, every Hermes subagent runs on `delegation.model`, or on the session's model when that is unset.
 
 ## Accept the verification offers, or don't
 

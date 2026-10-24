@@ -36,11 +36,11 @@ When the model config is missing and it matters, ask whether the user wants to p
 
 ## Get set up
 
-1. Install the plugin. In Claude Code, run `/plugin marketplace add justinramos101/xstack`, then `/plugin install xstack@xstack`. In Codex, run `codex plugin marketplace add justinramos101/xstack`, then `codex plugin add xstack@xstack`, or install it from the Plugins interface.
-2. Run [`/setup-xstack`](../setup-xstack/SKILL.md). It detects the models the host offers, asks for a reasoning budget, maps a model to each role, and writes the roles where the host loads them into every new session: `~/.claude/rules/xstack-models.md` on Claude Code, or an xstack block in `~/.codex/AGENTS.md` on Codex. Then it offers once each to generate a verification skill and a formal verification skill for the project, unless the project already has one.
+1. Install the plugin. In Claude Code, run `/plugin marketplace add justinramos101/xstack`, then `/plugin install xstack@xstack`. In Codex, run `codex plugin marketplace add justinramos101/xstack`, then `codex plugin add xstack@xstack`, or install it from the Plugins interface. In Hermes Agent, run `hermes plugins install justinramos101/xstack/hermes --enable`.
+2. Run [`/setup-xstack`](../setup-xstack/SKILL.md). It detects the models the host offers, asks for a reasoning budget, maps a model to each role, and writes the roles where the host loads them into every new session: `~/.claude/rules/xstack-models.md` on Claude Code, an xstack block in `~/.codex/AGENTS.md` on Codex, or `~/.hermes/xstack-models.md` on Hermes Agent. Then it offers once each to generate a verification skill and a formal verification skill for the project, unless the project already has one.
 3. Start a real task with `/poteto-mode`, a goal, and a check that can pass or fail.
 
-Installing changes nothing until the user invokes a skill. Only `/setup-xstack` loads from the user's words. Claude Code invokes skills as slash commands. Codex also accepts `$skill-name`. The [README](../../README.md) and [guide page 1](../../docs/guide/01-setup.md) have the details. Offer to word their first prompt with them, per [`references/prompting.md`](references/prompting.md).
+Installing changes nothing until the user invokes a skill. Only `/setup-xstack` loads from the user's words. Claude Code invokes skills as slash commands. Codex also accepts `$skill-name`. Hermes Agent namespaces them as `/xstack:skill-name`. The [README](../../README.md) and [guide page 1](../../docs/guide/01-setup.md) have the details. Offer to word their first prompt with them, per [`references/prompting.md`](references/prompting.md).
 
 If cost is the worry, say where the tokens go and how to spend fewer. xstack spends extra tokens on subagents and review panels. Rerun `/setup-xstack` and pick a smaller budget or cheaper models. A role set to `auto` or `inherit-parent` runs on the chat's model, which saves tokens when the chat runs on a cheaper model. A shorter panel list runs fewer subagents, one for each entry. Save `/poteto-mode` for work that needs rigor.
 
@@ -133,7 +133,7 @@ Principles are one-rule skills that `/poteto-mode` reads and cites in its replie
 |---|---|
 | The mode stopped applying after a few turns | It faded as the chat grew or after compaction. Start each task with `/poteto-mode`. |
 | A question got treated as the next step of the last task | Say "new task", or say the turn doesn't need the mode. |
-| A new model choice had no effect | Check that `/setup-xstack` wrote the host's roles (`~/.claude/rules/xstack-models.md` on Claude Code, the xstack block in `~/.codex/AGENTS.md` on Codex), that the session started after the write, and that the host's spawn tool lists that model and effort. A role the host can't run falls back to the parent model. |
+| A new model choice had no effect | Check that `/setup-xstack` wrote the host's roles (`~/.claude/rules/xstack-models.md` on Claude Code, the xstack block in `~/.codex/AGENTS.md` on Codex), that the session started after the write, and that the host's spawn tool lists that model and effort. In Hermes Agent, check that the role names a route `hermes delegation config` lists and that the session started after the route was created. A role the host can't run falls back to the parent model. |
 | Runs cost more than expected | See the cost paragraph under Get set up. |
 | A skill didn't load on its own | Only `/setup-xstack` loads from the user's words. The others load when the user types them or when `/poteto-mode` runs them, and it doesn't run every skill. |
 | Parallel agents overwrote each other | Give each agent its own worktree and explicit file ownership. |

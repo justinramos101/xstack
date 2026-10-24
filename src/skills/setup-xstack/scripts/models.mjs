@@ -14,22 +14,32 @@ const fastRoles = ['feature', 'refactoring', 'bug-fix', 'perf-issue', 'hillclimb
 const lineups = {
   claude: { fast: 'inherit-parent', strong: 'opus @ xhigh' },
   codex: { fast: 'gpt-6.1-sol @ xhigh', strong: 'gpt-6-astra @ xhigh' },
+  // Hermes's delegate_task takes no per-spawn model or effort; children run on the
+  // configured delegation model, else the parent's, so every role inherits.
+  hermes: { fast: 'inherit-parent', strong: 'inherit-parent' },
 };
 export const defaults = Object.fromEntries(Object.entries(lineups).map(([host, { fast, strong }]) => [
   host,
   Object.fromEntries(roles.map(role => [role, panels.has(role) ? `${strong}, ${fast}, ${strong}, ${fast}` : fastRoles.includes(role) ? fast : strong])),
 ]));
+// On Hermes a role names a delegation route (an advanced-delegation model_map option, passed
+// as a task's \`option\`), and the route carries its own model and reasoning effort.
+const hermesEffort = 'Hermes sets reasoning effort on each delegation route, not per role. Drop the @ effort and the budget, and set reasoning_effort on the route with `hermes delegation config`.';
 const efforts = new Set(['low', 'medium', 'high', 'xhigh', 'max', 'ultra']);
 const START = '<!-- xstack-models:start -->';
 const END = '<!-- xstack-models:end -->';
-const hostNames = { claude: 'Claude Code', codex: 'Codex' };
+const hostNames = { claude: 'Claude Code', codex: 'Codex', hermes: 'Hermes Agent' };
 
 // Claude Code loads every ~/.claude/rules/*.md into each session. Codex has no
 // such folder, so its roles live in a marked block of the global instructions
 // file it loads: AGENTS.override.md when that file has content, else AGENTS.md.
+// Hermes has no global rules file, so its roles get a file of their own that
+// workflows resolve through this script.
+const wholeFile = host => host === 'claude' || host === 'hermes';
 export function destination(host) {
   checkHost(host);
   if (host === 'claude') return join(homedir(), '.claude', 'rules', 'xstack-models.md');
+  if (host === 'hermes') return join(process.env.HERMES_HOME || join(homedir(), '.hermes'), 'xstack-models.md');
   const home = process.env.CODEX_HOME || join(homedir(), '.codex');
   const override = join(home, 'AGENTS.override.md');
   return existsSync(override) && readFileSync(override, 'utf8').trim() ? override : join(home, 'AGENTS.md');
@@ -38,11 +48,11 @@ export function destination(host) {
 export const legacyFile = () => join(homedir(), '.agents', 'xstack-models.md');
 
 function checkHost(host) {
-  if (!Object.hasOwn(hostNames, host)) throw new Error('Host must be claude or codex');
+  if (!Object.hasOwn(hostNames, host)) throw new Error('Host must be claude, codex, or hermes');
 }
 
 function parse(source) {
-  const sections = { shared: new Map(), claude: new Map(), codex: new Map() };
+  const sections = { shared: new Map(), claude: new Map(), codex: new Map(), hermes: new Map() };
   let section = 'shared';
   for (const line of source.split(/\r?\n/)) {
     if (line.trim() === START || line.trim() === END) continue;
@@ -76,11 +86,17 @@ export function resolveRole(source, host, role) {
   const sections = parse(source);
   const values = new Map([...sections.shared, ...sections[host]]);
   const budget = values.get('budget') ?? 'unlimited';
+  if (host === 'hermes' && budget !== 'unlimited') throw new Error(hermesEffort);
   const entries = (values.get(role) ?? defaults[host][role]).split(',').map(value => {
     const match = value.trim().match(/^([\w.-]+)(?:\s*@\s*([\w]+))?$/);
     if (!match || (match[2] && !efforts.has(match[2]))) throw new Error(`Invalid model entry: ${value}`);
     const model = match[1];
-    if (model === 'inherit-parent' || model === 'auto') return { model: null, effort: null };
+    const inherit = model === 'inherit-parent' || model === 'auto';
+    if (host === 'hermes') {
+      if (match[2]) throw new Error(hermesEffort);
+      return { option: inherit ? null : model };
+    }
+    if (inherit) return { model: null, effort: null };
     const target = budgets[budget];
     const chosen = match[2] ?? null;
     const ladder = [...efforts];
@@ -109,10 +125,11 @@ export function readConfig(host) {
   const file = destination(host);
   if (existsSync(file)) {
     const text = readFileSync(file, 'utf8');
-    const source = host === 'claude' ? text : extractBlock(text);
+    const source = wholeFile(host) ? text : extractBlock(text);
     if (source !== null) return { source, from: file };
   }
-  if (existsSync(legacyFile())) return { source: readFileSync(legacyFile(), 'utf8'), from: legacyFile() };
+  // The legacy file predates Hermes and names other hosts' models, so Hermes never reads it.
+  if (host !== 'hermes' && existsSync(legacyFile())) return { source: readFileSync(legacyFile(), 'utf8'), from: legacyFile() };
   return { source: '', from: null };
 }
 
@@ -123,11 +140,20 @@ export function render(host, draft) {
   const sections = parse(draft);
   const values = new Map([...sections.shared, ...sections[host]]);
   const budget = values.get('budget') ?? 'unlimited';
+  if (host === 'hermes' && budget !== 'unlimited') throw new Error(hermesEffort);
   const lines = [];
   for (const role of roles) {
     if (!values.has(role)) continue;
     resolveRole(`${role}: ${values.get(role)}`, host, role);
     lines.push(`${role}: ${values.get(role).trim()}`);
+  }
+  if (host === 'hermes') {
+    return [
+      '# xstack model roles for Hermes Agent. Written by setup-xstack; rerun it to change them.',
+      '# Each entry names a delegation route: a model_map option from the advanced-delegation plugin. When a skill spawns a subagent for a role, set that task\'s `option` to the route. `inherit-parent` or `auto`: omit `option`, so the subagent runs on the default route, else this session\'s model. Effort lives on the route.',
+      '# arena runners, architect runners, and interrogate reviewers spawn one subagent per entry. arena cross-judge pool lists alternatives for arena\'s one judge. A role with no line uses xstack\'s default, which `models.mjs hermes "<role>"` in the setup-xstack skill prints.',
+      ...lines,
+    ].join('\n') + '\n';
   }
   const cap = budgets[budget]
     ? `caps each entry's effort at ${budgets[budget]} and gives an entry without an effort ${budgets[budget]}`
@@ -153,7 +179,7 @@ function writeAtomic(file, text) {
 export function writeConfig(host, draft) {
   const body = render(host, draft);
   const file = destination(host);
-  if (host === 'claude') {
+  if (wholeFile(host)) {
     writeAtomic(file, body);
     return file;
   }
@@ -188,7 +214,7 @@ if (process.argv[1] && import.meta.url === pathToFileURL(realpathSync(process.ar
       const source = file ? extractBlock(text) ?? text : readConfig(host).source;
       console.log(JSON.stringify(resolveRole(source, host, role)));
     } else {
-      throw new Error('Usage: models.mjs <claude|codex> "<role>" [config-file] | read <host> | write <host> [draft-file]');
+      throw new Error('Usage: models.mjs <claude|codex|hermes> "<role>" [config-file] | read <host> | write <host> [draft-file]');
     }
   } catch (error) {
     console.error(error.message);

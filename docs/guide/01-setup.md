@@ -1,6 +1,6 @@
 # Set up xstack
 
-Follow the [installation instructions](../../README.md#install) for Claude Code or Codex.
+Follow the [installation instructions](../../README.md#install) for Claude Code, Codex, or Hermes Agent.
 
 ## Prerequisites
 
@@ -8,20 +8,20 @@ xstack needs git and your host. A few workflows need more, and you can add those
 
 - **GitHub CLI (`gh`), logged in**, for opening, babysitting, and shipping pull requests. If the [Origin](https://cursor.com/docs/origin) CLI is installed and can resolve the repository, the PR workflows use it instead of `gh`.
 - **[Bun](https://bun.sh)** for babysitting and shipping through GitHub, where it runs the bundled PR watcher, and for the Orchestrate playbook's bookkeeping script. Opening a PR and the Origin paths need no Bun.
-- **A scheduler that outlives the session** for overnight runs. Claude Code has `/loop`. Without one, a run stops when the session ends.
+- **A scheduler that outlives the session** for overnight runs. Claude Code has `/loop`, and Hermes Agent has cron jobs. Without one, a run stops when the session ends.
 - **A way to drive your app** for UI verification. The [verify and ship](./06-verify-and-ship.md#create-a-project-verification-skill) page shows how to generate one.
 
 ## Pick your models
 
-Invoke `/setup-xstack` through your host's skill interface. It reads the models and efforts your host's subagent tool offers, asks for a reasoning budget, and writes the roles where the host loads them into every new session: `~/.claude/rules/xstack-models.md` in Claude Code, or a marked xstack block in `~/.codex/AGENTS.md` in Codex. The rest of your `AGENTS.md` stays as it was. Until you run it, every role uses xstack's defaults, mapped from pstack's lineup of a fast coding model and a stronger judgment model, all at xhigh:
+Invoke `/setup-xstack` through your host's skill interface. It reads the models and efforts your host's subagent tool offers, asks for a reasoning budget, and writes the roles where the host loads them into every new session: `~/.claude/rules/xstack-models.md` in Claude Code, or a marked xstack block in `~/.codex/AGENTS.md` in Codex. The rest of your `AGENTS.md` stays as it was. In Hermes Agent it writes `~/.hermes/xstack-models.md`, which workflows read on demand. Until you run it, every role uses xstack's defaults, mapped from pstack's lineup of a fast coding model and a stronger judgment model, all at xhigh:
 
-| Roles | Claude Code | Codex |
-| --- | --- | --- |
-| feature, refactoring, bug-fix, perf-issue, hillclimb, how explorer, why investigators, reflect tooling, swarm workers | `inherit-parent` | `gpt-6.1-sol @ xhigh` |
-| judgment and prose, hardest tasks, how explainer, why synthesizer, reflect judgment, divergent, synthesizer | `opus @ xhigh` | `gpt-6-astra @ xhigh` |
-| arena runners, arena cross-judge pool, architect runners, interrogate reviewers | `opus @ xhigh, inherit-parent`, twice over | `gpt-6-astra @ xhigh, gpt-6.1-sol @ xhigh`, twice over |
+| Roles | Claude Code | Codex | Hermes Agent |
+| --- | --- | --- | --- |
+| feature, refactoring, bug-fix, perf-issue, hillclimb, how explorer, why investigators, reflect tooling, swarm workers | `inherit-parent` | `gpt-6.1-sol @ xhigh` | `inherit-parent` |
+| judgment and prose, hardest tasks, how explainer, why synthesizer, reflect judgment, divergent, synthesizer | `opus @ xhigh` | `gpt-6-astra @ xhigh` | `inherit-parent` |
+| arena runners, arena cross-judge pool, architect runners, interrogate reviewers | `opus @ xhigh, inherit-parent`, twice over | `gpt-6-astra @ xhigh, gpt-6.1-sol @ xhigh`, twice over | `inherit-parent`, four times |
 
-Claude Code has no Grok, so pstack's coding roles run on the session's own model there. Panels always run independent workers, but they gain model diversity only when their entries name distinct models.
+Claude Code has no Grok, so pstack's coding roles run on the session's own model there. Hermes Agent's defaults inherit because xstack can't guess your models; see [Model routes in Hermes Agent](#model-routes-in-hermes-agent). Panels always run independent workers, but they gain model diversity only when their entries name distinct models.
 
 A budget sets a reasoning effort target, not a dollar limit:
 
@@ -37,6 +37,19 @@ Not every host and model supports every effort. When the target is unsupported, 
 The [host runtime](../../src/skills/poteto-mode/references/host-runtime.md) defines model resolution, agent fallbacks, local worktrees, transcript lookup, and scheduling. Each workflow reads that file when you invoke the workflow directly. Claude Code and Codex may expose different tool names and limits.
 
 You only override what you care about. To change a role later, rerun `/setup-xstack`. The new roles apply to new sessions. If you set up an earlier xstack, setup reads your old `~/.agents/xstack-models.md` once and moves this host's roles over. Delete the old file after you've run setup on both hosts.
+
+### Model routes in Hermes Agent
+
+Hermes works with almost any model, so xstack doesn't name Hermes models. A Hermes role names a *route* instead: a named entry in your Hermes config that fixes a provider, a model, and a reasoning effort. The official `advanced-delegation` plugin provides them:
+
+```sh
+hermes plugins install advanced-delegation --enable
+hermes delegation config
+```
+
+Create a fast coding route and a stronger judgment route, such as `fast` and `deep`, and for real panel diversity a third on another vendor, such as `alt`. Start a new session, then run `/xstack:setup-xstack`. It reads the route names from the subagent tool and maps each role to one, for example `feature: fast`, `hardest tasks: deep`, and `interrogate reviewers: deep, fast, alt, fast`. To change models later, edit the routes. xstack's roles stay as they are. Effort is set on each route, so Hermes has no budget step. Each subagent's result names the model it actually ran on.
+
+Without routes, every Hermes subagent runs on `delegation.model`, or on the session's model when that is unset.
 
 ## Accept the verification offers, or don't
 
@@ -57,10 +70,10 @@ xstack spends extra tokens on subagents and review panels. That's the price of t
 
 ## Run your first task
 
-Try `/poteto-mode explain how this project's main request path works`, or `$poteto-mode` in Codex. Put the task in the same message so the skill is attached to it. From there you can type normal follow-ups. In a long session, invoke `/poteto-mode` again when you start a new task, so its rules are fresh in context. The [next chapter](02-poteto-mode.md) explains task routing.
+Try `/poteto-mode explain how this project's main request path works`, `$poteto-mode` in Codex, or `/xstack:poteto-mode` in Hermes Agent. Put the task in the same message so the skill is attached to it. From there you can type normal follow-ups. In a long session, invoke `/poteto-mode` again when you start a new task, so its rules are fresh in context. The [next chapter](02-poteto-mode.md) explains task routing.
 
 ## Manual install
 
-The plugin is the recommended install. It includes the helper agent definitions the workflows use and, in Claude Code, a hook that tells each session where the skill files live. Most xstack skills are meant to be run by you, not chosen by the model on its own, and Claude Code hides those from the model unless the hook is present.
+The plugin is the recommended install. It includes the helper agent definitions the workflows use and, in Claude Code, a hook that tells each session where the skill files live. The Hermes Agent plugin registers every skill under the `xstack:` namespace and lists the user-only ones by name alone, so they don't crowd the model's skill index. Most xstack skills are meant to be run by you, not chosen by the model on its own, and Claude Code hides those from the model unless the hook is present.
 
-You can instead copy individual skill folders. In the repository they live under `src/skills/`, or under `claude/skills/` and `codex/skills/` for a copy already rendered for one host. Copy them into `.claude/skills/` for one project or `~/.claude/skills/` for your account in Claude Code, or into `.agents/skills/` or `~/.agents/skills/` in Codex. Create those directories if they do not exist. If you already have a skill with the same name, keep your copy. That works for single skills, with two limits. In Claude Code, the model cannot find the hidden skills without the hook. And a skill-only install has no bundled agent prompts, so workflows that need them run inline and say so.
+You can instead copy individual skill folders. In the repository they live under `src/skills/`, or under `claude/skills/`, `codex/skills/`, and `hermes/skills/` for a copy already rendered for one host. Copy them into `.claude/skills/` for one project or `~/.claude/skills/` for your account in Claude Code, into `.agents/skills/` or `~/.agents/skills/` in Codex, or into `.hermes/skills/` or `~/.hermes/skills/` in Hermes Agent. Create those directories if they do not exist. If you already have a skill with the same name, keep your copy. That works for single skills, with two limits. In Claude Code, the model cannot find the hidden skills without the hook. And a skill-only install has no bundled agent prompts, so workflows that need them run inline and say so.

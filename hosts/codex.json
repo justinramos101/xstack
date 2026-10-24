@@ -6,7 +6,7 @@
 				"com.openai": {
 					"interface": {
 						"displayName": "xstack",
-						"shortDescription": "pstack's rigorous agent workflows, ported to Claude Code and Codex.",
+						"shortDescription": "pstack's rigorous agent workflows, ported to Claude Code, Codex, and Hermes Agent.",
 						"category": "Developer Tools",
 						"logo": "./assets/logo.png"
 					},

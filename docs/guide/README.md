@@ -1,6 +1,6 @@
 # The xstack guide
 
-xstack is a plugin for Claude Code and Codex. It adds skills that make the agent understand code before editing it, design before building, prove its work on the real app, and ship small pull requests. It is a port of pstack, a Cursor plugin by Lauren Tan, so the same habits run in your host.
+xstack is a plugin for Claude Code, Codex, and Hermes Agent. It adds skills that make the agent understand code before editing it, design before building, prove its work on the real app, and ship small pull requests. It is a port of pstack, a Cursor plugin by Lauren Tan, so the same habits run in your host.
 
 xstack works best when you stop micromanaging the agent. You describe what you want and how you'll know it's done. `/poteto-mode` picks the playbook, runs the other skills as the steps need them, and shows you the evidence. This guide teaches that habit with realistic prompts.
 
@@ -41,8 +41,8 @@ You don't need to name a playbook or list skills. "repro first" and a checkable 
 
 The guide and the skills use a few terms as if you already know them. Here they are.
 
-- **Host.** The tool running the agent: Claude Code or Codex.
-- **Skill.** A Markdown file of instructions the agent loads for one job. You invoke one as `/name` in Claude Code or `$name` in Codex. Some skills load on their own when a task triggers them.
+- **Host.** The tool running the agent: Claude Code, Codex, or Hermes Agent.
+- **Skill.** A Markdown file of instructions the agent loads for one job. You invoke one as `/name` in Claude Code, `$name` in Codex, or `/xstack:name` in Hermes Agent. Some skills load on their own when a task triggers them.
 - **poteto-mode.** The skill that routes every task. Named after Lauren Tan's GitHub handle, poteto. It captures her working style, and [Make it yours](./09-make-it-yours.md) shows how to generate your own.
 - **Playbook.** An ordered checklist inside `/poteto-mode` for one kind of task, such as Bug fix, Feature, or Opening a PR. There are 23. You never invoke a playbook. `/poteto-mode` matches one from your prompt.
 - **Principle.** A named rule, such as Prove It Works, that the agent applies and cites. You can steer the agent by saying the name. [Steer with principle names](./08-principles.md) lists all 24.

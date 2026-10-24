@@ -4,11 +4,12 @@ import { dirname, join, posix } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
 const repo = join(dirname(fileURLToPath(import.meta.url)), '..');
-const skipped = new Set(['node_modules', '.DS_Store']);
+const skipped = new Set(['node_modules', '.DS_Store', '__pycache__']);
 export const sharedDocs = ['README.md', 'LICENSE', 'docs/guide', 'assets'];
 const readJson = path => JSON.parse(readFileSync(join(repo, path), 'utf8'));
 const claudeData = readJson('hosts/claude.json');
 const codexData = readJson('hosts/codex.json');
+const hermesData = readJson('hosts/hermes.json');
 
 function walk(dir) {
   const files = new Map();
@@ -98,6 +99,15 @@ function withHint(frontmatter, hint) {
 
 const manifestFiles = (pkg, data) => Object.entries(data.manifests).map(([path, extra]) => [path, json({ ...pkg, ...extra })]);
 
+// Hermes reads a native plugin.yaml. JSON strings are valid YAML double-quoted scalars,
+// so every value is written as JSON and needs no YAML escaping of its own.
+const yamlValue = value => Array.isArray(value) ? `[${value.map(yamlValue).join(', ')}]` : JSON.stringify(value);
+const hermesManifest = pkg => {
+  const fields = { name: pkg.name, version: pkg.version, description: pkg.description, author: pkg.author?.name, license: pkg.license, homepage: pkg.homepage, tags: pkg.keywords, ...hermesData.manifest };
+  return text(`${Object.entries(fields).filter(([, value]) => value !== undefined).map(([key, value]) => `${key}: ${yamlValue(value)}`).join('\n')}\n`);
+};
+const hermesSkillFields = new Set(['name', 'description', 'disable-model-invocation']);
+
 const control = /[\u0000-\u0008\u000b-\u001f\u007f]/g;
 const escapeControl = char => `\\u${char.charCodeAt(0).toString(16).padStart(4, '0')}`;
 const tomlString = value => `"${value.replace(/[\\"]/g, '\\$&').replace(/\n/g, '\\n').replace(/\t/g, '\\t').replace(control, escapeControl)}"`;
@@ -135,6 +145,20 @@ export const hosts = {
     )]],
     manifests: pkg => manifestFiles(pkg, codexData),
     extras: () => [],
+  },
+  hermes: {
+    dir: 'hermes',
+    tokens: {
+      'this skill directory': () => '<this skill directory>',
+      'skill file': name => `the absolute path your parent gave you, else the \`xstack:${name}\` skill loaded with \`skill_view\`, else \`skills/${name}/SKILL.md\` under the xstack plugin directory, \`\${HERMES_HOME:-~/.hermes}/plugins/xstack\``,
+    },
+    skill: (skill, render) => skillFiles(skill, skill.frontmatter.filter(([key]) => hermesSkillFields.has(key)), render),
+    agent: (agent, render) => [[`agents/${agent.name}.md`, text(
+      serialize([['name', `name: ${agent.name}`], ['description', `description: ${agent.description}`]], render(agent.body)),
+      `src/agents/${agent.name}.md`,
+    )]],
+    manifests: pkg => [['plugin.yaml', hermesManifest(pkg)]],
+    extras: () => [...walk(join(repo, 'hosts/hermes'))],
   },
 };
 
@@ -230,7 +254,7 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
       console.error(`generated trees are out of date. Run node scripts/build.mjs\n${problems.join('\n')}`);
       process.exit(1);
     }
-    if (check) console.log('claude/ and codex/ match src/ and hosts/');
+    if (check) console.log('claude/, codex/, and hermes/ match src/ and hosts/');
   } catch (error) {
     console.error(`build failed: ${error.message}`);
     process.exit(1);

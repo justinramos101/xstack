@@ -4,12 +4,12 @@ This page is for maintainers. Users install from the [README](../README.md#insta
 
 ## Why the version matters
 
-Claude Code copies the plugin at install and fetches a new copy only when the manifest `version` changes, so pushing commits without a bump reaches no Claude Code user who already has xstack installed. Codex can refresh its copy on an explicit marketplace upgrade regardless, but treat the version as the release signal on both hosts. So:
+Claude Code copies the plugin at install and fetches a new copy only when the manifest `version` changes, so pushing commits without a bump reaches no Claude Code user who already has xstack installed. Codex can refresh its copy on an explicit marketplace upgrade regardless, but treat the version as the release signal on every host. Hermes Agent pulls the latest commit on `hermes plugins update xstack` and shows the manifest version in `hermes plugins list`. So:
 
-- **Bump the version** when anything under `src/` or `hosts/` changes. That is every pstack sync. After a sync, run `node scripts/build.mjs` and commit the regenerated `claude/` and `codex/` trees. Also compare the Codex defaults in `src/skills/setup-xstack/scripts/models.mjs` with the models Codex's spawn tool lists. Codex names models by dated slug, so a retired one degrades every spawn of that role to the parent until the default is bumped. `node scripts/build.mjs --check` fails while they are stale.
+- **Bump the version** when anything under `src/` or `hosts/` changes. That is every pstack sync. After a sync, run `node scripts/build.mjs` and commit the regenerated `claude/`, `codex/`, and `hermes/` trees. Also compare the Codex defaults in `src/skills/setup-xstack/scripts/models.mjs` with the models Codex's spawn tool lists. Codex names models by dated slug, so a retired one degrades every spawn of that role to the parent until the default is bumped. `node scripts/build.mjs --check` fails while they are stale.
 - **Leave it alone** for docs, tests, and CI. Installed users run none of that.
 
-The version lives in `src/plugin.json`. The build writes it into `claude/.claude-plugin/plugin.json`, `codex/plugin.json`, and `codex/.codex-plugin/plugin.json`, and `scripts/manifests.test.mjs` fails when they disagree.
+The version lives in `src/plugin.json`. The build writes it into `claude/.claude-plugin/plugin.json`, `codex/plugin.json`, `codex/.codex-plugin/plugin.json`, and `hermes/plugin.yaml`, and `scripts/manifests.test.mjs` fails when they disagree.
 
 ## Cut a release
 
@@ -63,5 +63,13 @@ codex plugin marketplace add justinramos101/xstack@next
 ```
 
 Refresh with `codex plugin marketplace upgrade xstack`. Re-add the marketplace without `@next` to switch back.
+
+In Hermes Agent, install the generated tree from a checkout of the branch, then start a new session:
+
+```sh
+hermes plugins install "file://$PWD#hermes" --force --enable
+```
+
+Reinstall from `justinramos101/xstack/hermes` with `--force` to switch back.
 
 When the change is ready, open the PR to `main` with the plain version, and reset `next` to `main` after it merges so the next prerelease starts from the release.

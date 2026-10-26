@@ -47,7 +47,7 @@ Present the synthesizer's full Accepted / Rejected / Backlog output and wait for
 
 File each Backlog item to your team's devex or backlog tracker without waiting. Only the Accepted list waits for approval.
 
-Never edit a skill under `plugins/cache/`. Before approval, show its destination, `.claude/skills/<skill>/` or `~/.claude/skills/<skill>/` on Claude Code, and `.agents/skills/<skill>/` or `~/.agents/skills/<skill>/` on Codex. After approval, copy the skill folder there and edit the copy. Never open a PR or push.
+Never edit a skill under `plugins/cache/`. Before approval, show its destination, `.claude/skills/<skill>/` or `~/.claude/skills/<skill>/` on Claude Code, and `.agents/skills/<skill>/` or `~/.agents/skills/<skill>/` on Codex. After approval, copy the skill folder there and edit the copy. A relative link that leaves the skill folder, such as `../poteto-mode/references/host-runtime.md`, breaks in the copy, so copy each such file into the copy and point the link at it. Never open a PR or push.
 
 Follow each approved row's Routing exactly:
 

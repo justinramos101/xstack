@@ -1,8 +1,8 @@
 {
   "repository": "https://github.com/cursor/plugins",
   "path": "pstack",
-  "revision": "88d47514b82e7c44f00f2b2a72ff6dd12158038c",
-  "version": "0.15.29",
+  "revision": "e73df471cd4bd918367e99f3dd9c51bd53ddf5f0",
+  "version": "0.15.32",
   "pathMapping": {
     "skills/setup-pstack": "skills/setup-xstack"
   },
@@ -73,6 +73,7 @@
     "Portable checked plans and bounded local verification lanes",
     "Benny runner setup replaces managed Cursor automation setup",
     "Model roles written where each host loads them: a Claude Code rule and a marked block in Codex AGENTS.md",
-    "Generated per-host Claude Code and Codex plugin trees rendered from a host-neutral src/ by scripts/build.mjs"
+    "Generated per-host Claude Code and Codex plugin trees rendered from a host-neutral src/ by scripts/build.mjs",
+    "statechart creates its mapping scaffold exclusively, so a concurrent writer's mapping is never truncated"
   ]
 }

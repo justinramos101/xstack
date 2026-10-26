@@ -55,6 +55,7 @@ Most of xstack needs nothing beyond git and your host. A few workflows lean on o
 | Leave a task running overnight | A scheduler or watcher that survives the session. Claude Code has `/loop`. Without a persistent runner, the loop stops when the session ends. |
 | Verify a change in a UI | A way to drive the app: a browser, a native-app driver, or a CLI. `/create-verification-skill` writes one for your project. |
 | Formally verify a property | A verifier the project's developers can install, such as TLA+ for ordering bugs. `/create-formal-verification-skill` picks one and says why. |
+| Draw a behavior as a statechart | Node with npm, and network on first use. `/statechart` installs TLC and Java with [mise](https://mise.jdx.dev), about 305 MB, unless `TLA2TOOLS` and `JAVA` point at ones you have. It also fetches its chart renderer once. |
 | Run Benny | A Slack app, an event runner, credentials, and your explicit authorization. See the [Benny README](automations/benny/README.md). |
 
 When a bundled helper agent or model is missing, the workflow says so and uses what the host has instead. A missing app driver is different. UI verification then reports blocked, never a pass.

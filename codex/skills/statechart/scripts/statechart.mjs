@@ -819,9 +819,11 @@ async function fromSpec(input, { "expect-broken": expected, title, cover, ...fla
   const listed = second?.role === "against" ? listedBreaks(second.model.spec) : undefined;
   const model = readInput(input, cfg, expected, inputs);
   const out = outDir(flags.out, input, name);
-  if (!fs.existsSync(map)) {
-    fs.writeFileSync(map, SCAFFOLD(name, input));
+  try {
+    fs.writeFileSync(map, SCAFFOLD(name, input), { flag: "wx" });
     throw new CannotFinish(`Wrote ${rel(map)}. Fill in its labels, then run this command again.`);
+  } catch (e) {
+    if (e.code !== "EEXIST") throw e;
   }
   const tools = findTools();
   return inWorkFolder(async (work) => {

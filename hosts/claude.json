@@ -23,6 +23,7 @@
 		"setup-xstack": "[budget, optional]",
 		"sharpen": "[prompt to sharpen]",
 		"show-me-your-work": "[task, or \"catch me up\"]",
+		"statechart": "[behavior to chart, or a chart or spec]",
 		"swarm": "[task, slices or worker count, done predicate]",
 		"tdd": "[bug or behavior to pin with a test]",
 		"teach": "[what to explain]",

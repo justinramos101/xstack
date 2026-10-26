@@ -20,7 +20,10 @@ jobs:
         with:
           bun-version: '1.3.12'
       - run: node scripts/build.mjs --check
-      - run: node --test scripts/*.test.mjs
+      - uses: jdx/mise-action@2d8d4cafcbd33be2ea37d2b6f5ad595363d1f1ca # v5.1.1
+        with:
+          install: false
+      - run: node --test scripts/*.test.mjs src/skills/*/scripts/test/*.test.mjs
       - run: npx --yes @anthropic-ai/claude-code@latest plugin validate --strict ./claude
       - run: bun install --frozen-lockfile
         working-directory: src/skills/poteto-mode/scripts

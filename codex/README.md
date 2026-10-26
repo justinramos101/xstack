@@ -21,6 +21,8 @@ xstack is a port of [pstack](https://github.com/cursor/plugins/tree/main/pstack)
 /plugin install xstack@xstack
 ```
 
+Claude Code leaves auto-update off for third-party marketplaces, so xstack stays on the version you installed. To turn it on, run `/plugin`, open the **Marketplaces** tab, select `xstack`, and choose **Enable auto-update**. To update once by hand, run `claude plugin update xstack@xstack`.
+
 ### Codex
 
 ```sh

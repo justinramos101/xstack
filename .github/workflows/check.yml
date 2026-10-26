@@ -7,7 +7,7 @@ permissions:
 jobs:
   test:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -20,7 +20,20 @@ jobs:
         with:
           bun-version: '1.3.12'
       - run: node scripts/build.mjs --check
-      - run: node --test scripts/*.test.mjs
+      - uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
+        with:
+          distribution: temurin
+          java-version: '25'
+      - name: Fetch the TLC that the statechart skill pins
+        run: |
+          read -r version sum < <(node --input-type=module -e 'import { TLC_TOOL } from "./src/skills/statechart/scripts/tlc-tools.mjs"; console.log(TLC_TOOL.match(/@([^@]+)$/)[1], TLC_TOOL.match(/sha256:(\w+)/)[1])')
+          jar="$RUNNER_TEMP/tla2tools.jar"
+          curl -fsSL -o "$jar" "https://github.com/tlaplus/tlaplus/releases/download/v$version/tla2tools.jar"
+          echo "$sum  $jar" | sha256sum -c -
+          test -x "$JAVA_HOME/bin/java"
+          echo "TLA2TOOLS=$jar" >> "$GITHUB_ENV"
+          echo "JAVA=$JAVA_HOME/bin/java" >> "$GITHUB_ENV"
+      - run: node --test scripts/*.test.mjs src/skills/*/scripts/test/*.test.mjs
       - run: npx --yes @anthropic-ai/claude-code@latest plugin validate --strict ./claude
       - run: bun install --frozen-lockfile
         working-directory: src/skills/poteto-mode/scripts

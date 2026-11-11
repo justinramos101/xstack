@@ -25,6 +25,14 @@ For a quick ballpark the user asked for, one run is enough. Still check question
 6. **Does it matter?** Next to any micro result, measure the end-to-end path a user waits on, with realistic data sizes and concurrency, and report the micro result as a share of the whole. A helper that takes 1% of a request can make the request at most 1% faster, however fast the helper gets.
 7. **Did it even happen?** Confirm the work ran inside the timed region: the request reached the server, the rows were written, the bytes were read, and the code used the result. Lazy code (generators nobody iterates, promises nobody awaits, results the JIT can discard) and timeouts produce numbers for work that never happened.
 
+## Count-based gates
+
+A gate that passes on a count, such as "0 of N runs hitched", follows three rules.
+
+- Fix N and the stopping rule before any run.
+- Set the threshold above one measurement quantum, such as one frame. A threshold at one quantum counts noise.
+- The gate is void when the baseline fails it in the same slot. Take the paired evidence to the gate's owner instead of rerunning.
+
 ## Report
 
 - Lead with the verdict: faster, slower, no measurable difference, or inconclusive.

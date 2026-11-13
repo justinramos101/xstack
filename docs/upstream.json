@@ -67,13 +67,13 @@
     "why"
   ],
   "adaptations": [
-    "Host runtime and per-host model defaults mapped from pstack's lineup",
     "Codex explicit-invocation metadata",
     "Provider-neutral make-bot-ui",
     "Portable checked plans and bounded local verification lanes",
     "Benny runner setup replaces managed Cursor automation setup",
-    "Model roles written where each host loads them: a Claude Code rule and a marked block in Codex AGENTS.md",
-    "Generated per-host Claude Code and Codex plugin trees rendered from a host-neutral src/ by scripts/build.mjs",
-    "statechart creates its mapping scaffold exclusively, so a concurrent writer's mapping is never truncated"
+    "statechart creates its mapping scaffold exclusively, so a concurrent writer's mapping is never truncated",
+    "Codex model roles preserve the existing AGENTS.md block and legacy shared config fallback",
+    "Codex-only rendered distribution retains the existing plugin identity and marketplace path",
+    "Standalone skills include helper prompts and explicit-invocation policies"
   ]
 }

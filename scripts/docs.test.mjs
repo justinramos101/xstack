@@ -9,7 +9,7 @@ import { sharedDocs } from './build.mjs';
 // links and anchors resolve, slash commands name a real skill, and counts match.
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const src = join(root, 'src');
-const trees = ['claude', 'codex'].map(dir => join(root, dir));
+const trees = ['codex'].map(dir => join(root, dir));
 const skills = readdirSync(join(src, 'skills')).filter(name => existsSync(join(src, 'skills', name, 'SKILL.md')));
 const principles = skills.filter(name => name.startsWith('principle-'));
 const playbooks = readdirSync(join(src, 'skills/poteto-mode/playbooks')).filter(name => name.endsWith('.md'));
@@ -97,7 +97,6 @@ test('every skill is named after its folder, and every user-only skill hides fro
     const text = readFileSync(join(src, 'skills', name, 'SKILL.md'), 'utf8');
     assert.equal(text.match(/^name: (.+)$/m)?.[1], name);
     const hidden = /^disable-model-invocation: true$/m.test(text);
-    assert.equal(/^disable-model-invocation: true$/m.test(readFileSync(join(root, 'claude/skills', name, 'SKILL.md'), 'utf8')), hidden, `claude ${name}`);
     const openai = join(root, 'codex/skills', name, 'agents', 'openai.yaml');
     assert.equal(existsSync(openai) && /allow_implicit_invocation: false/.test(readFileSync(openai, 'utf8')), hidden, `codex ${name}`);
   }

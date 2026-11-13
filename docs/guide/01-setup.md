@@ -1,6 +1,6 @@
 # Set up xstack
 
-Follow the [installation instructions](../../README.md#install) for Claude Code or Codex.
+Follow the [installation instructions](../../README.md#install) for Codex.
 
 ## Prerequisites
 
@@ -8,20 +8,20 @@ xstack needs git and your host. A few workflows need more, and you can add those
 
 - **GitHub CLI (`gh`), logged in**, for opening, babysitting, and shipping pull requests. If the [Origin](https://cursor.com/docs/origin) CLI is installed and can resolve the repository, the PR workflows use it instead of `gh`.
 - **[Bun](https://bun.sh)** for babysitting and shipping through GitHub, where it runs the bundled PR watcher, and for the Orchestrate playbook's bookkeeping script. Opening a PR and the Origin paths need no Bun.
-- **A scheduler that outlives the session** for overnight runs. Claude Code has `/loop`. Without one, a run stops when the session ends.
+- **A scheduler that outlives the session** for overnight runs. Without one, a run stops when the session ends.
 - **A way to drive your app** for UI verification. The [verify and ship](./06-verify-and-ship.md#create-a-project-verification-skill) page shows how to generate one.
 
 ## Pick your models
 
-Invoke `/setup-xstack` through your host's skill interface. It reads the models and efforts your host's subagent tool offers, asks for a reasoning budget, and writes the roles where the host loads them into every new session: `~/.claude/rules/xstack-models.md` in Claude Code, or a marked xstack block in `~/.codex/AGENTS.md` in Codex. The rest of your `AGENTS.md` stays as it was. Until you run it, every role uses xstack's defaults, mapped from pstack's lineup of a fast coding model and a stronger judgment model, all at xhigh:
+Invoke `/setup-xstack` through your host's skill interface. It reads the models and efforts your host's subagent tool offers, asks for a reasoning budget, and writes the roles where the host loads them into every new session: a marked xstack block in `~/.codex/AGENTS.md`. The rest of your `AGENTS.md` stays as it was. Until you run it, every role uses xstack's defaults, mapped from pstack's lineup of a fast coding model and a stronger judgment model, all at xhigh:
 
-| Roles | Claude Code | Codex |
-| --- | --- | --- |
-| feature, refactoring, bug-fix, perf-issue, hillclimb, how explorer, why investigators, reflect tooling, swarm workers | `inherit-parent` | `gpt-6.1-sol @ xhigh` |
-| judgment and prose, hardest tasks, how explainer, why synthesizer, reflect judgment, divergent, synthesizer | `opus @ xhigh` | `gpt-6-astra @ xhigh` |
-| arena runners, arena cross-judge pool, architect runners, interrogate reviewers | `opus @ xhigh, inherit-parent`, twice over | `gpt-6-astra @ xhigh, gpt-6.1-sol @ xhigh`, twice over |
+| Roles | Codex |
+| --- | --- |
+| feature, refactoring, bug-fix, perf-issue, hillclimb, how explorer, why investigators, reflect tooling, swarm workers | `gpt-6.1-sol @ xhigh` |
+| judgment and prose, hardest tasks, how explainer, why synthesizer, reflect judgment, divergent, synthesizer | `gpt-6-astra @ xhigh` |
+| arena runners, arena cross-judge pool, architect runners, interrogate reviewers | `gpt-6-astra @ xhigh, gpt-6.1-sol @ xhigh`, twice over |
 
-Claude Code has no Grok, so pstack's coding roles run on the session's own model there. Panels always run independent workers, but they gain model diversity only when their entries name distinct models.
+Panels always run independent workers, but they gain model diversity only when their entries name distinct models.
 
 A budget sets a reasoning effort target, not a dollar limit:
 
@@ -34,13 +34,13 @@ A budget sets a reasoning effort target, not a dollar limit:
 
 Not every host and model supports every effort. When the target is unsupported, setup offers the highest supported effort at or below it.
 
-The [host runtime](../../src/skills/poteto-mode/references/host-runtime.md) defines model resolution, agent fallbacks, local worktrees, transcript lookup, and scheduling. Each workflow reads that file when you invoke the workflow directly. Claude Code and Codex may expose different tool names and limits.
+The [host runtime](../../src/skills/poteto-mode/references/host-runtime.md) defines model resolution, agent fallbacks, local worktrees, transcript lookup, and scheduling. Each workflow reads that file when you invoke the workflow directly. Tool names and limits depend on the active session.
 
-You only override what you care about. To change a role later, rerun `/setup-xstack`. The new roles apply to new sessions. If you set up an earlier xstack, setup reads your old `~/.agents/xstack-models.md` once and moves this host's roles over. Delete the old file after you've run setup on both hosts.
+You only override what you care about. To change a role later, rerun `/setup-xstack`. The new roles apply to new sessions. If you set up an earlier xstack, setup reads your old `~/.agents/xstack-models.md` once and moves this host's roles over. Keep the old file for rollback; the Codex block takes precedence.
 
 ## Accept the verification offers, or don't
 
-If the project has no way to drive its real app, either a `verify-*` skill or an existing harness, setup offers once to run [`/create-verification-skill`](../../src/skills/create-verification-skill/SKILL.md). Say yes and it writes a project-local `verify-<app>` skill under `.claude/skills/` or `.agents/skills/` that teaches agents to drive your app the way a user does. It proves the skill works once before handing it over. Say no and setup moves on. You can run `/create-verification-skill` yourself any time. [Verify and ship](./06-verify-and-ship.md#create-a-project-verification-skill) covers it in depth.
+If the project has no way to drive its real app, either a `verify-*` skill or an existing harness, setup offers once to run [`/create-verification-skill`](../../src/skills/create-verification-skill/SKILL.md). Say yes and it writes a project-local `verify-<app>` skill under `.agents/skills/` that teaches agents to drive your app the way a user does. It proves the skill works once before handing it over. Say no and setup moves on. You can run `/create-verification-skill` yourself any time. [Verify and ship](./06-verify-and-ship.md#create-a-project-verification-skill) covers it in depth.
 
 If you're new to xstack, say yes. An agent that can check its own work keeps going until the check passes. An agent that can't hands every result back to you to check by hand. Of everything in this guide, the verification skill pays off the most.
 
@@ -61,6 +61,8 @@ Try `/poteto-mode explain how this project's main request path works`, or `$pote
 
 ## Manual install
 
-The plugin is the recommended install. It includes the helper agent definitions the workflows use and, in Claude Code, a hook that tells each session where the skill files live. Most xstack skills are meant to be run by you, not chosen by the model on its own, and Claude Code hides those from the model unless the hook is present.
+The plugin is optional. For a complete skills install, clone the repository and link the rendered skills (see the [README](../../README.md#install)). Both install methods include helper prompts, references, scripts, and Codex invocation policies. Updating a linked checkout with `git pull` updates existing skills; rerun the installer to link newly added skills.
 
-You can instead copy individual skill folders. In the repository they live under `src/skills/`, or under `claude/skills/` and `codex/skills/` for a copy already rendered for one host. Copy them into `.claude/skills/` for one project or `~/.claude/skills/` for your account in Claude Code, or into `.agents/skills/` or `~/.agents/skills/` in Codex. Create those directories if they do not exist. If you already have a skill with the same name, keep your copy. That works for single skills, with two limits. In Claude Code, the model cannot find the hidden skills without the hook. And a skill-only install has no bundled agent prompts, so workflows that need them run inline and say so.
+For selected skills, copy whole folders from `codex/skills/` into `.agents/skills/` for one project or `~/.agents/skills/` for your account. Include `poteto-mode` for its shared runtime and helper prompts, plus any sibling skills the chosen workflow calls. Preserve each folder's `agents/openai.yaml` and scripts. Copying `src/skills/` directly skips the build's metadata and prompt rendering.
+
+Use one install method at a time. Existing plugin users can keep their installation and update normally. To switch, disable or uninstall the plugin in Codex before linking the skills. Keep the same model-role block; no setup migration is required. Never overwrite a same-name personal skill without reviewing it.

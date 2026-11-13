@@ -20,17 +20,14 @@ function check(plan) {
   } finally { rmSync(dir, { recursive: true, force: true }); }
 }
 
-test('unconfigured roles take each host\'s default lineup', () => {
+test('unconfigured roles take the Codex default lineup', () => {
   assert.deepEqual(resolveRole('', 'codex', 'bug-fix'), { host: 'codex', role: 'bug-fix', budget: 'unlimited', entries: [{ model: 'gpt-6.1-sol', effort: 'xhigh' }] });
   assert.deepEqual(resolveRole('', 'codex', 'why synthesizer').entries, [{ model: 'gpt-6-astra', effort: 'xhigh' }]);
-  assert.deepEqual(resolveRole('', 'claude', 'bug-fix').entries, [{ model: null, effort: null }]);
-  assert.deepEqual(resolveRole('', 'claude', 'hardest tasks').entries, [{ model: 'opus', effort: 'xhigh' }]);
-  assert.deepEqual(resolveRole('', 'claude', 'interrogate reviewers').entries, [{ model: 'opus', effort: 'xhigh' }, { model: null, effort: null }, { model: 'opus', effort: 'xhigh' }, { model: null, effort: null }]);
   assert.deepEqual(resolveRole('# budget: small\n', 'codex', 'arena runners').entries, [{ model: 'gpt-6-astra', effort: 'medium' }, { model: 'gpt-6.1-sol', effort: 'medium' }, { model: 'gpt-6-astra', effort: 'medium' }, { model: 'gpt-6.1-sol', effort: 'medium' }]);
   assert.deepEqual(resolveRole('feature: inherit-parent\n', 'codex', 'feature').entries, [{ model: null, effort: null }]);
 });
 test('every default resolves and the default draft round-trips through write', () => {
-  for (const host of ['claude', 'codex']) {
+  for (const host of ['codex']) {
     for (const role of roles) assert.doesNotThrow(() => resolveRole(defaultDraft(host), host, role));
   }
   const home = mkdtempSync(join(tmpdir(), 'xstack-home-'));
@@ -38,14 +35,13 @@ test('every default resolves and the default draft round-trips through write', (
     const empty = modelsCli(home, ['read', 'codex']);
     assert.match(empty.stderr, /no config; showing xstack's defaults for codex/);
     assert.equal(empty.stdout, defaultDraft('codex'));
-    assert.equal(modelsCli(home, ['write', 'claude'], defaultDraft('claude')).status, 0);
-    assert.deepEqual(JSON.parse(modelsCli(home, ['claude', 'judgment and prose']).stdout).entries, [{ model: 'opus', effort: 'xhigh' }]);
+    assert.equal(modelsCli(home, ['write', 'codex'], defaultDraft('codex')).status, 0);
+    assert.deepEqual(JSON.parse(modelsCli(home, ['codex', 'judgment and prose']).stdout).entries, [{ model: 'gpt-6-astra', effort: 'xhigh' }]);
   } finally { rmSync(home, { recursive: true, force: true }); }
 });
-test('host overrides shared legacy roles without leaking into the other host', () => {
+test('Codex overrides shared legacy roles and ignores the retired host section', () => {
   const config = 'feature, refactoring: old-model\n## codex\n# budget: small\nfeature: coding-model @ max\n## claude\nfeature: another-model @ high\n';
   assert.deepEqual(resolveRole(config, 'codex', 'feature').entries, [{ model: 'coding-model', effort: 'medium' }]);
-  assert.deepEqual(resolveRole(config, 'claude', 'feature').entries, [{ model: 'another-model', effort: 'high' }]);
   assert.deepEqual(resolveRole(config, 'codex', 'refactoring').entries, [{ model: 'old-model', effort: 'medium' }]);
 });
 test('budget preserves a lower supported effort and all inheritance entries', () => {
@@ -56,7 +52,7 @@ test('unlimited preserves explicit efforts and ignores removed legacy critique r
   assert.deepEqual(resolveRole('how critics: old\nfeature: alpha @ ultra\n', 'codex', 'feature').entries, [{ model: 'alpha', effort: 'ultra' }]);
 });
 test('invalid host, role, budget, effort, and scalar panel fail explicitly', () => {
-  for (const [source, host, role] of [['', 'unknown', 'feature'], ['', 'codex', 'unknown'], ['# budget: free', 'codex', 'feature'], ['feature: alpha @ impossible', 'codex', 'feature'], ['feature: alpha, beta', 'codex', 'feature'], ['## other\nfeature: alpha', 'codex', 'feature']]) {
+  for (const [source, host, role] of [['', 'claude', 'feature'], ['', 'unknown', 'feature'], ['', 'codex', 'unknown'], ['# budget: free', 'codex', 'feature'], ['feature: alpha @ impossible', 'codex', 'feature'], ['feature: alpha, beta', 'codex', 'feature'], ['## other\nfeature: alpha', 'codex', 'feature']]) {
     assert.throws(() => resolveRole(source, host, role));
   }
 });
@@ -76,20 +72,6 @@ function modelsCli(home, args, input) {
   return spawnSync(process.execPath, [models, ...args], { env, input, encoding: 'utf8' });
 }
 
-test('write puts Claude roles in an always-loaded rule and resolves them back', () => {
-  const home = mkdtempSync(join(tmpdir(), 'xstack-home-'));
-  try {
-    const draft = '# budget: medium\nfeature, refactoring: opus @ max\nhow critics: old\nswarm workers: inherit-parent\n';
-    const written = modelsCli(home, ['write', 'claude'], draft);
-    assert.equal(written.status, 0, written.stderr);
-    const rule = readFileSync(join(home, '.claude', 'rules', 'xstack-models.md'), 'utf8');
-    assert.match(rule, /^# budget: medium \(caps each entry's effort at high/m);
-    assert.match(rule, /^feature: opus @ max$/m);
-    assert.doesNotMatch(rule, /how critics/);
-    const resolved = modelsCli(home, ['claude', 'feature']);
-    assert.deepEqual(JSON.parse(resolved.stdout).entries, [{ model: 'opus', effort: 'high' }]);
-  } finally { rmSync(home, { recursive: true, force: true }); }
-});
 
 test('write keeps the rest of Codex AGENTS.md byte for byte and replaces only its block', () => {
   const home = mkdtempSync(join(tmpdir(), 'xstack-home-'));
@@ -132,8 +114,8 @@ test('Codex roles go to AGENTS.override.md when Codex loads it instead of AGENTS
 test('the loaded role text names the panels and keeps the judge pool to one judge', () => {
   const home = mkdtempSync(join(tmpdir(), 'xstack-home-'));
   try {
-    assert.equal(modelsCli(home, ['write', 'claude'], 'arena cross-judge pool: opus, sonnet\n').status, 0);
-    const rule = readFileSync(join(home, '.claude', 'rules', 'xstack-models.md'), 'utf8');
+    assert.equal(modelsCli(home, ['write', 'codex'], 'arena cross-judge pool: alpha, beta\n').status, 0);
+    const rule = readFileSync(join(home, 'codex-home', 'AGENTS.md'), 'utf8');
     assert.match(rule, /arena runners, architect runners, and interrogate reviewers spawn one subagent per entry/);
     assert.match(rule, /arena cross-judge pool lists alternatives for arena's one judge/);
   } finally { rmSync(home, { recursive: true, force: true }); }
@@ -151,7 +133,7 @@ test('read falls back to the legacy shared file until a host is written', () => 
     assert.deepEqual(JSON.parse(modelsCli(home, ['codex', 'feature']).stdout).entries, [{ model: 'legacy-model', effort: null }]);
     assert.equal(modelsCli(home, ['write', 'codex'], legacy.stdout).status, 0);
     assert.match(modelsCli(home, ['read', 'codex']).stderr, /codex-home\/AGENTS\.md/);
-    assert.equal(modelsCli(home, ['write', 'claude'], 'feature: alpha @ ultra\nbogus role: x\n').status, 1);
+    assert.equal(modelsCli(home, ['write', 'codex'], 'feature: alpha @ ultra\nbogus role: x\n').status, 1);
   } finally { rmSync(home, { recursive: true, force: true }); }
 });
 

@@ -7,12 +7,8 @@ import { pathToFileURL } from 'node:url';
 export const roles = ['feature', 'refactoring', 'bug-fix', 'perf-issue', 'hillclimb', 'judgment and prose', 'hardest tasks', 'how explorer', 'how explainer', 'why investigators', 'why synthesizer', 'reflect tooling', 'reflect judgment', 'divergent', 'synthesizer', 'arena runners', 'arena cross-judge pool', 'swarm workers', 'architect runners', 'interrogate reviewers'];
 const panels = new Set(['arena runners', 'arena cross-judge pool', 'architect runners', 'interrogate reviewers']);
 const budgets = { unlimited: null, large: 'xhigh', medium: 'high', small: 'medium' };
-// pstack's defaults per host. Its fast-coding roles (grok-4.7-xhigh-fast) and its
-// judgment roles (claude-opus-5-5-xhigh) map to each host's nearest model; Claude
-// Code has no Grok, so pstack's own Claude Code map runs those roles on the parent.
 const fastRoles = ['feature', 'refactoring', 'bug-fix', 'perf-issue', 'hillclimb', 'how explorer', 'why investigators', 'reflect tooling', 'swarm workers'];
 const lineups = {
-  claude: { fast: 'inherit-parent', strong: 'opus @ xhigh' },
   codex: { fast: 'gpt-6.1-sol @ xhigh', strong: 'gpt-6-astra @ xhigh' },
 };
 export const defaults = Object.fromEntries(Object.entries(lineups).map(([host, { fast, strong }]) => [
@@ -22,14 +18,11 @@ export const defaults = Object.fromEntries(Object.entries(lineups).map(([host, {
 const efforts = new Set(['low', 'medium', 'high', 'xhigh', 'max', 'ultra']);
 const START = '<!-- xstack-models:start -->';
 const END = '<!-- xstack-models:end -->';
-const hostNames = { claude: 'Claude Code', codex: 'Codex' };
+const hostNames = { codex: 'Codex' };
 
-// Claude Code loads every ~/.claude/rules/*.md into each session. Codex has no
-// such folder, so its roles live in a marked block of the global instructions
-// file it loads: AGENTS.override.md when that file has content, else AGENTS.md.
+// Codex loads AGENTS.override.md when it has content, else AGENTS.md.
 export function destination(host) {
   checkHost(host);
-  if (host === 'claude') return join(homedir(), '.claude', 'rules', 'xstack-models.md');
   const home = process.env.CODEX_HOME || join(homedir(), '.codex');
   const override = join(home, 'AGENTS.override.md');
   return existsSync(override) && readFileSync(override, 'utf8').trim() ? override : join(home, 'AGENTS.md');
@@ -38,10 +31,10 @@ export function destination(host) {
 export const legacyFile = () => join(homedir(), '.agents', 'xstack-models.md');
 
 function checkHost(host) {
-  if (!Object.hasOwn(hostNames, host)) throw new Error('Host must be claude or codex');
+  if (!Object.hasOwn(hostNames, host)) throw new Error('Host must be codex');
 }
 
-function parse(source) {
+function parseLegacyConfig(source) {
   const sections = { shared: new Map(), claude: new Map(), codex: new Map() };
   let section = 'shared';
   for (const line of source.split(/\r?\n/)) {
@@ -73,7 +66,7 @@ function parse(source) {
 export function resolveRole(source, host, role) {
   checkHost(host);
   if (!roles.includes(role)) throw new Error(`Unknown role: ${role}`);
-  const sections = parse(source);
+  const sections = parseLegacyConfig(source);
   const values = new Map([...sections.shared, ...sections[host]]);
   const budget = values.get('budget') ?? 'unlimited';
   const entries = (values.get(role) ?? defaults[host][role]).split(',').map(value => {
@@ -109,7 +102,7 @@ export function readConfig(host) {
   const file = destination(host);
   if (existsSync(file)) {
     const text = readFileSync(file, 'utf8');
-    const source = host === 'claude' ? text : extractBlock(text);
+    const source = extractBlock(text);
     if (source !== null) return { source, from: file };
   }
   if (existsSync(legacyFile())) return { source: readFileSync(legacyFile(), 'utf8'), from: legacyFile() };
@@ -120,7 +113,7 @@ export function readConfig(host) {
 // draft are flattened for this host, and retired roles are dropped.
 export function render(host, draft) {
   checkHost(host);
-  const sections = parse(draft);
+  const sections = parseLegacyConfig(draft);
   const values = new Map([...sections.shared, ...sections[host]]);
   const budget = values.get('budget') ?? 'unlimited';
   const lines = [];
@@ -153,10 +146,6 @@ function writeAtomic(file, text) {
 export function writeConfig(host, draft) {
   const body = render(host, draft);
   const file = destination(host);
-  if (host === 'claude') {
-    writeAtomic(file, body);
-    return file;
-  }
   const block = `${START}\n${body}${END}`;
   const text = existsSync(file) ? readFileSync(file, 'utf8') : '';
   const count = marker => text.split(marker).length - 1;
@@ -188,7 +177,7 @@ if (process.argv[1] && import.meta.url === pathToFileURL(realpathSync(process.ar
       const source = file ? extractBlock(text) ?? text : readConfig(host).source;
       console.log(JSON.stringify(resolveRole(source, host, role)));
     } else {
-      throw new Error('Usage: models.mjs <claude|codex> "<role>" [config-file] | read <host> | write <host> [draft-file]');
+      throw new Error('Usage: models.mjs codex "<role>" [config-file] | read <host> | write <host> [draft-file]');
     }
   } catch (error) {
     console.error(error.message);

@@ -34,7 +34,6 @@ jobs:
           echo "TLA2TOOLS=$jar" >> "$GITHUB_ENV"
           echo "JAVA=$JAVA_HOME/bin/java" >> "$GITHUB_ENV"
       - run: node --test scripts/*.test.mjs src/skills/*/scripts/test/*.test.mjs
-      - run: npx --yes @anthropic-ai/claude-code@latest plugin validate --strict ./claude
       - run: bun install --frozen-lockfile
         working-directory: src/skills/poteto-mode/scripts
       - run: bun run test && bun run typecheck

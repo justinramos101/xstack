@@ -1,8 +1,8 @@
 # xstack
 
-xstack is a plugin for Claude Code and Codex. It gives the agent a set of working habits: understand the code before editing it, design before building, prove the change on the real app, and ship small reviewable pull requests. You describe a goal in plain words. The agent picks a playbook for it, runs the steps, and reports back with evidence.
+xstack is a skill library for Codex, with an optional plugin install. It gives the agent a set of working habits: understand the code before editing it, design before building, prove the change on the real app, and ship small reviewable pull requests. You describe a goal in plain words. The agent picks a playbook for it, runs the steps, and reports back with evidence.
 
-xstack is a port of [pstack](https://github.com/cursor/plugins/tree/main/pstack), a Cursor plugin by Lauren Tan. pstack runs only inside Cursor. xstack carries the same skills, playbooks, and principles to Claude Code and Codex.
+xstack is a port of [pstack](https://github.com/cursor/plugins/tree/main/pstack), a Cursor plugin by Lauren Tan. xstack adapts its skills, playbooks, and principles for Codex.
 
 ## What you get
 
@@ -14,34 +14,36 @@ xstack is a port of [pstack](https://github.com/cursor/plugins/tree/main/pstack)
 
 ## Install
 
-### Claude Code
+### Skills (recommended)
 
-```text
-/plugin marketplace add justinramos101/xstack
-/plugin install xstack@xstack
+With git and Node.js installed, clone xstack somewhere permanent, then link its rendered skills into Codex's user skills directory:
+
+```sh
+git clone https://github.com/justinramos101/xstack.git ~/.local/share/xstack
+node ~/.local/share/xstack/scripts/install.mjs --user
 ```
 
-Claude Code leaves auto-update off for third-party marketplaces, so xstack stays on the version you installed. To turn it on, run `/plugin`, open the **Marketplaces** tab, select `xstack`, and choose **Enable auto-update**. To update once by hand, run `claude plugin update xstack@xstack`.
+Start a new Codex session and invoke `$setup-xstack`. Update with `git -C ~/.local/share/xstack pull --ff-only`, then rerun the installer to link any newly added skills. The installer preserves existing skills and reports conflicts before changing anything. For one project, run the installer with `--project` from that project's root. Keep the checkout: the skills are symlinks to it.
 
-### Codex
+### Codex plugin (optional)
 
 ```sh
 codex plugin marketplace add justinramos101/xstack
 codex plugin add xstack@xstack
 ```
 
-Or install xstack from the Plugins interface. To copy individual skills instead of installing the plugin, see [Manual install](docs/guide/01-setup.md#manual-install).
+Or install xstack from the Plugins interface. **Already installed? Keep it.** The marketplace name, plugin identity, `codex/` source path, and skill names stay the same. Refresh with `codex plugin marketplace upgrade xstack`. Both methods provide the same workflows and helper prompts; the plugin is a convenient distribution option, not a runtime requirement. Use one method at a time to avoid duplicate skills. See [Manual install](docs/guide/01-setup.md#manual-install) for individual skills and switching methods.
 
 ## First task
 
-1. Run `setup-xstack`. It reads the models your host's subagent tool offers, asks for a reasoning budget, and writes the roles where the host loads them into every new session: `~/.claude/rules/xstack-models.md` in Claude Code, or a marked xstack block in `~/.codex/AGENTS.md` in Codex.
+1. Run `setup-xstack`. It reads the models your host's subagent tool offers, asks for a reasoning budget, and writes the roles where the host loads them into every new session: a marked xstack block in `~/.codex/AGENTS.md`.
 2. Run `poteto-mode` with a concrete task and a way to tell when it's done:
 
 ```text
 /poteto-mode the export writes duplicate rows when a retry lands mid-run. repro first, then fix and verify.
 ```
 
-Invoke `poteto-mode` by name with your task in the same message, so the skill is attached to it. Claude Code invokes skills as slash commands. Codex also accepts `$poteto-mode`, or any `$skill-name`. Stuck, or unsure which skill fits? Run `/poteto-help`. The [guide](docs/guide/README.md) walks through a first task, verification, and overnight runs, and has a [glossary](docs/guide/README.md#glossary) for the terms the workflows use.
+Invoke `poteto-mode` by name with your task in the same message, so the skill is attached to it. Codex accepts `$poteto-mode`, or any `$skill-name`. Stuck, or unsure which skill fits? Run `/poteto-help`. The [guide](docs/guide/README.md) walks through a first task, verification, and overnight runs, and has a [glossary](docs/guide/README.md#glossary) for the terms the workflows use.
 
 ## What each workflow needs
 
@@ -52,7 +54,7 @@ Most of xstack needs nothing beyond git and your host. A few workflows lean on o
 | Open pull requests | GitHub CLI (`gh`), logged in. If the [Origin](https://cursor.com/docs/origin) CLI is installed and can resolve the repository, the PR workflows use it instead of `gh`. |
 | Babysit or ship pull requests on GitHub | `gh` plus [Bun](https://bun.sh), which runs the bundled PR watcher. On Origin the workflows call the `origin` CLI directly and need no Bun. |
 | Run the Orchestrate playbook, a multi-day program with many stacked PRs | `gh`, or the `origin` CLI on Origin, plus Bun. Orchestrate reads the order of a PR stack by walking the PR base chain through the forge, and keeps its bookkeeping with a bundled Bun script. No workflow needs Graphite. |
-| Leave a task running overnight | A scheduler or watcher that survives the session. Claude Code has `/loop`. Without a persistent runner, the loop stops when the session ends. |
+| Leave a task running overnight | A scheduler or watcher that survives the session. Without a persistent runner, the loop stops when the session ends. |
 | Verify a change in a UI | A way to drive the app: a browser, a native-app driver, or a CLI. `/create-verification-skill` writes one for your project. |
 | Formally verify a property | A verifier the project's developers can install, such as TLA+ for ordering bugs. `/create-formal-verification-skill` picks one and says why. |
 | Draw a behavior as a statechart | Node with npm, and network on first use. `/statechart` installs TLC and Java with [mise](https://mise.jdx.dev), about 305 MB, unless `TLA2TOOLS` and `JAVA` point at ones you have. It also fetches its chart renderer once. |
@@ -62,16 +64,15 @@ When a bundled helper agent or model is missing, the workflow says so and uses w
 
 ## Contributing
 
-xstack tracks pstack release by release. The pinned upstream revision is in [docs/upstream.json](docs/upstream.json). Edit skills and agents under `src/`, and host-only data under `hosts/`. Then render the Claude Code and Codex plugin trees in `claude/` and `codex/`, commit them with the change, and run the tests before opening a PR:
+xstack tracks pstack release by release. The pinned upstream revision is in [docs/upstream.json](docs/upstream.json). Edit skills and agents under `src/`, and host-only data under `hosts/`. Then render the Codex distribution in `codex/`, commit them with the change, and run the tests before opening a PR:
 
 ```sh
 node scripts/build.mjs
 node --test scripts/*.test.mjs
-claude plugin validate --strict ./claude
 cd src/skills/poteto-mode/scripts && bun install --frozen-lockfile && bun run test && bun run typecheck
 ```
 
-A release is a version bump in `src/plugin.json`, the only place the version lives. The build copies it into each tree's manifests, and merging the bump to `main` tags and publishes a GitHub release. [Releasing](docs/releasing.md) covers that and how to try a change before it ships.
+A release is a version bump in `src/plugin.json`, the only place the version lives. The build copies it into the Codex manifests, and merging the bump to `main` tags and publishes a GitHub release. [Releasing](docs/releasing.md) covers that and how to try a change before it ships.
 
 ## License
 

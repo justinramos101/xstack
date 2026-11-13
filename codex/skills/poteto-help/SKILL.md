@@ -23,7 +23,7 @@ Infer the need from the message and the conversation. A named situation, such as
 
 Check the state that changes the answer, and mention it only when it does:
 
-- No `# xstack model roles` lines in context does not mean setup never ran: the session may predate setup, or the user may still have the legacy `~/.agents/xstack-models.md`. Run `node <setup-xstack skill directory>/scripts/models.mjs read <claude|codex>` before you say so. If it names the legacy file, the roles still apply, and `/setup-xstack` moves them to where the host loads them. If it finds no config, `/setup-xstack` hasn't run for this host, so every role inherits the parent model.
+- No `# xstack model roles` lines in context does not mean setup never ran: the session may predate setup, or the user may still have the legacy `~/.agents/xstack-models.md`. Run `node <setup-xstack skill directory>/scripts/models.mjs read codex` before you say so. If it names the legacy file, the roles still apply, and `/setup-xstack` moves them to where the host loads them. If it finds no config, `/setup-xstack` hasn't run for this host, so every role inherits the parent model.
 - No `verify-*` skill or other app harness in the project means agents have no scripted way to drive the app. Mention `/create-verification-skill` when the question is about proving a change works.
 - No formal verification skill in the project means no property is checked past what tests reach. Mention `/create-formal-verification-skill` when the question is about a race, an invariant, or another case tests rarely hit. When one exists and the code it covers changed after the commit it records as last in sync, mention `/maintain-formal-verification-skill` if the question touches that code.
 
@@ -34,23 +34,23 @@ When the model config is missing and it matters, ask whether the user wants to p
 
 ## Get set up
 
-1. Install the plugin. In Claude Code, run `/plugin marketplace add justinramos101/xstack`, then `/plugin install xstack@xstack`. In Codex, run `codex plugin marketplace add justinramos101/xstack`, then `codex plugin add xstack@xstack`, or install it from the Plugins interface.
-2. Run [`/setup-xstack`](../setup-xstack/SKILL.md). It detects the models the host offers, asks for a reasoning budget, maps a model to each role, and writes the roles where the host loads them into every new session: `~/.claude/rules/xstack-models.md` on Claude Code, or an xstack block in `~/.codex/AGENTS.md` on Codex. Then it offers once each to generate a verification skill and a formal verification skill for the project, unless the project already has one.
+1. Install the skills or the optional Codex plugin using the [README](../../README.md#install). Keep only one installation active to avoid duplicate skills.
+2. Run [`/setup-xstack`](../setup-xstack/SKILL.md). It detects the models the host offers, asks for a reasoning budget, maps a model to each role, and writes the roles where the host loads them into every new session: an xstack block in `~/.codex/AGENTS.md`. Then it offers once each to generate a verification skill and a formal verification skill for the project, unless the project already has one.
 3. Start a real task with `/poteto-mode`, a goal, and a check that can pass or fail.
 
-Installing changes nothing until the user invokes a skill. Only `/setup-xstack` loads from the user's words. Claude Code invokes skills as slash commands. Codex also accepts `$skill-name`. The [README](../../README.md) and [guide page 1](../../docs/guide/01-setup.md) have the details. Offer to word their first prompt with them, per [`references/prompting.md`](references/prompting.md).
+Installing changes nothing until the user invokes a skill. Only `/setup-xstack` loads from the user's words. Codex accepts `$skill-name`. The [README](../../README.md) and [guide page 1](../../docs/guide/01-setup.md) have the details. Offer to word their first prompt with them, per [`references/prompting.md`](references/prompting.md).
 
 If cost is the worry, say where the tokens go and how to spend fewer. xstack spends extra tokens on subagents and review panels. Rerun `/setup-xstack` and pick a smaller budget or cheaper models. A role set to `auto` or `inherit-parent` runs on the chat's model, which saves tokens when the chat runs on a cheaper model. A shorter panel list runs fewer subagents, one for each entry. Save `/poteto-mode` for work that needs rigor.
 
-xstack runs on Claude Code and Codex. Most workflow skills, including `/poteto-mode`, `/how`, `/why`, and `/teach`, spawn subagents with per-role models, and a few steps need a scheduler such as `/loop`. When the host lacks one of these, the workflow says so and uses what the host has. A skill-only install has no bundled agent prompts, and in Claude Code no hook to find the hidden skills. [Host runtime](../poteto-mode/references/host-runtime.md) has the details.
+xstack runs on Codex. Most workflow skills, including `/poteto-mode`, `/how`, `/why`, and `/teach`, spawn subagents with per-role models, and a few steps need a scheduler such as `/loop`. When the host lacks one of these, the workflow says so and uses what the host has. Both install methods include the helper prompts with poteto-mode. [Host runtime](../poteto-mode/references/host-runtime.md) has the details.
 
 ## Start a task with `/poteto-mode`
 
 `/poteto-mode` matches the task to a playbook, copies the playbook's steps into a visible checklist, and runs the other skills as the steps need them. A step it skips stays in the checklist as `skip: <reason>`. A good prompt states the goal and how to tell it's done. It doesn't list skills, because a hand-written sequence tends to drop or reorder steps the playbook would keep. Read [`references/prompting.md`](references/prompting.md) before you help word one. [Guide page 2](../../docs/guide/02-poteto-mode.md) has examples.
 
-Invoking `/poteto-mode` loads the skill into the chat. It can fade as a long chat moves on or after the host compacts the context, so start each new task with `/poteto-mode`. Link the host's skills docs when this comes up: [Claude Code](https://code.claude.com/docs/en/skills) or [Codex](https://learn.chatgpt.com/docs/build-skills).
+Invoking `/poteto-mode` loads the skill into the chat. It can fade as a long chat moves on or after the host compacts the context, so start each new task with `/poteto-mode`. Link the host's skills docs when this comes up: [Codex](https://learn.chatgpt.com/docs/build-skills).
 
-Mid-chat, "new task" makes the mode match a fresh playbook. `/poteto-mode` already uses `poteto-agent` for the subagents its playbook steps spawn. To get the same style from a subagent of your own, spawn the `poteto-agent` agent. Claude Code may list it with a plugin prefix, such as `xstack:poteto-agent`.
+Mid-chat, "new task" makes the mode match a fresh playbook. `/poteto-mode` already uses `poteto-agent` for the subagents its playbook steps spawn. To get the same style from a subagent of your own, spawn the `poteto-agent` agent.
 
 ## Pick a skill
 
@@ -133,7 +133,7 @@ Principles are one-rule skills that `/poteto-mode` reads and cites in its replie
 |---|---|
 | The mode stopped applying after a few turns | It faded as the chat grew or after compaction. Start each task with `/poteto-mode`. |
 | A question got treated as the next step of the last task | Say "new task", or say the turn doesn't need the mode. |
-| A new model choice had no effect | Check that `/setup-xstack` wrote the host's roles (`~/.claude/rules/xstack-models.md` on Claude Code, the xstack block in `~/.codex/AGENTS.md` on Codex), that the session started after the write, and that the host's spawn tool lists that model and effort. A role the host can't run falls back to the parent model. |
+| A new model choice had no effect | Check that `/setup-xstack` wrote the host's roles (the xstack block in `~/.codex/AGENTS.md`), that the session started after the write, and that the host's spawn tool lists that model and effort. A role the host can't run falls back to the parent model. |
 | Runs cost more than expected | See the cost paragraph under Get set up. |
 | A skill didn't load on its own | Only `/setup-xstack` loads from the user's words. The others load when the user types them or when `/poteto-mode` runs them, and it doesn't run every skill. |
 | Parallel agents overwrote each other | Give each agent its own worktree and explicit file ownership. |

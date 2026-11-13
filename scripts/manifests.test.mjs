@@ -4,7 +4,7 @@ import { readFileSync } from 'node:fs';
 
 const read = file => JSON.parse(readFileSync(new URL(`../${file}`, import.meta.url), 'utf8'));
 const source = read('src/plugin.json');
-const manifests = ['claude/.claude-plugin/plugin.json', 'codex/plugin.json', 'codex/.codex-plugin/plugin.json'].map(file => [file, read(file)]);
+const manifests = ['codex/plugin.json', 'codex/.codex-plugin/plugin.json'].map(file => [file, read(file)]);
 
 // x.y.z with an optional SemVer prerelease such as -alpha.1: dot-separated identifiers, no leading zeros.
 const identifier = String.raw`(?:0|[1-9]\d*|\d*[A-Za-z-][0-9A-Za-z-]*)`;
@@ -24,4 +24,13 @@ test('every generated manifest agrees with src/plugin.json on identity and versi
 test('the version pattern accepts SemVer prereleases and rejects malformed ones', () => {
   for (const ok of ['0.5.0', '0.6.0-alpha.1', '0.6.0-alpha-fix.1', '1.0.0-rc.0']) assert.match(ok, semver, ok);
   for (const bad of ['0.6.0-', '0.6.0-.', '0.6.0-alpha..1', '0.6.0-01', '0.6.0-alpha.1+build', 'v0.6.0']) assert.doesNotMatch(bad, semver, bad);
+});
+
+test('existing Codex marketplace identity and skill entry point stay compatible', () => {
+  const catalog = read('.agents/plugins/marketplace.json');
+  assert.equal(catalog.name, 'xstack');
+  assert.equal(catalog.plugins[0].name, 'xstack');
+  assert.deepEqual(catalog.plugins[0].source, { source: 'local', path: './codex' });
+  assert.equal(source.name, 'xstack');
+  assert.equal(read('codex/.codex-plugin/plugin.json').skills, './skills/');
 });

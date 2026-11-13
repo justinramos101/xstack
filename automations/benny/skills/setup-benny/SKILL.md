@@ -11,7 +11,7 @@ Read the copied pack's `../../FOR_AGENTS.md`. These are direct runner instructio
 
 Resolve the target repository from the request. Copy or merge the pack into `.agents/automations/benny/` there. Preserve destination-only files, review conflicts, and keep user-owned configuration outside the copied pack. Use `.agents/benny/` for secret-free project configuration or a user configuration directory when the runner can access it.
 
-Ensure xstack's shared skills are available in the runner's actual checkout and account. Use the supported Claude Code or Codex plugin installation, or project-local skills under the host's skill directory. Never assume a personal plugin cache is available to a remote runner. Verify `how`, `why`, `tdd`, `unslop`, and the required principles in a fresh runner session. If a dependency cannot load, leave the workflows disabled and report what is missing.
+Ensure xstack's shared skills are available in the runner's actual checkout and account. Use the supported Codex plugin installation, or project-local skills under the host's skill directory. Never assume a personal plugin cache is available to a remote runner. Verify `how`, `why`, `tdd`, `unslop`, and the required principles in a fresh runner session. If a dependency cannot load, leave the workflows disabled and report what is missing.
 
 Commit the copied pack and any referenced secret-free configuration on the runner's branch when authorized. Otherwise prepare the diff and explain that the runner needs those files before activation. Live prompts use committed repository-relative paths, never a temporary plugin cache path.
 
@@ -19,7 +19,7 @@ Commit the copied pack and any referenced secret-free configuration on the runne
 
 Copy `../../templates/configuration.example.yaml` and the reproduction skill's feature-map example outside the pack. Fill the source Slack channel, optional operations channel, repository, default branch, trusted triage identity, tracker, control adapter, feature map, routing, model roles, and time and retry budgets. Preserve existing values on reruns.
 
-Choose an actual automation runner with a supported Slack event trigger, or a receiver and scheduler the user wants built. Claude Code and Codex sessions are not automatically persistent Slack listeners. Record how the runner starts an agent, supplies the triggering event, injects credentials, checks out the repository, and stores deduplication state. If only manual execution is available, label the workflow manual. Do not claim automated delivery.
+Choose an actual automation runner with a supported Slack event trigger, or a receiver and scheduler the user wants built. Codex sessions are not automatically persistent Slack listeners. Record how the runner starts an agent, supplies the triggering event, injects credentials, checks out the repository, and stores deduplication state. If only manual execution is available, label the workflow manual. Do not claim automated delivery.
 
 Require explicit source channel, triage identity, repository, tracker adapter, control adapter, and feature map. Choose only models and efforts available to the runner. Keep credentials in its secret manager or server-side environment. Never store tokens in YAML, prompts, or worker briefs.
 

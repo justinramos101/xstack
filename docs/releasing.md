@@ -4,12 +4,12 @@ This page is for maintainers. Users install from the [README](../README.md#insta
 
 ## Why the version matters
 
-Claude Code copies the plugin at install and fetches a new copy only when the manifest `version` changes, so pushing commits without a bump reaches no Claude Code user who already has xstack installed. Codex can refresh its copy on an explicit marketplace upgrade regardless, but treat the version as the release signal on both hosts. So:
+Codex can refresh its copy on an explicit marketplace upgrade. Keep the version as the release signal for plugin users:
 
-- **Bump the version** when anything under `src/` or `hosts/` changes. That is every pstack sync. After a sync, run `node scripts/build.mjs` and commit the regenerated `claude/` and `codex/` trees. `node scripts/build.mjs --check` fails when these generated trees are stale. Separately, compare the Codex defaults in `src/skills/setup-xstack/scripts/models.mjs` with the models Codex's spawn tool lists. Codex names models by dated slug, so a retired one degrades every spawn of that role to the parent until the default is bumped. The build does not check model availability.
+- **Bump the version** when anything under `src/` or `hosts/` changes. That is every pstack sync. After a sync, run `node scripts/build.mjs` and commit the regenerated `codex/` tree. `node scripts/build.mjs --check` fails when these generated trees are stale. Separately, compare the Codex defaults in `src/skills/setup-xstack/scripts/models.mjs` with the models Codex's spawn tool lists. A retired model degrades every spawn of that role to the parent until the default is bumped. The build does not check model availability.
 - **Leave it alone** for docs, tests, and CI. Installed users run none of that.
 
-The version lives in `src/plugin.json`. The build writes it into `claude/.claude-plugin/plugin.json`, `codex/plugin.json`, and `codex/.codex-plugin/plugin.json`, and `scripts/manifests.test.mjs` fails when they disagree.
+The version lives in `src/plugin.json`. The build writes it into `codex/plugin.json` and `codex/.codex-plugin/plugin.json`; `scripts/manifests.test.mjs` fails when they disagree.
 
 ## Cut a release
 
@@ -24,36 +24,13 @@ The sync PR title already names the pstack range, so the generated notes say whi
 
 Two ways, lightest first.
 
-### One session from a checkout
+### From a checkout
 
-Start Claude Code with the checkout's generated Claude tree as a plugin directory:
+Run `node scripts/build.mjs`, then `node scripts/install.mjs --project` from a scratch project using the installer's absolute path. Keep any installed plugin disabled while testing these skills. Start a new Codex session after rebuilding. The linked skills include the helper prompts and invocation metadata.
 
-```sh
-claude --plugin-dir ./claude
-```
+### From the `next` branch
 
-That loads the files in place for that session only, no version bump needed, and replaces the installed xstack for the session because both have the manifest name `xstack`. Run `node scripts/build.mjs` after each edit under `src/`, and the edits show up on the next start. This is the right tool while you are still editing.
-
-### Every session from the `next` branch
-
-For changes you want to live with for a while, push them to the `next` branch with a prerelease version, then install the `xstack-next` entry.
-
-1. On `next`, set the version in `src/plugin.json` to a prerelease such as `0.6.0-alpha.1` and run `node scripts/build.mjs`. Every later push to `next` that you want to receive needs a new prerelease version, because updates are detected by version, not by commit.
-2. Push to `next`. The release workflow publishes `v0.6.0-alpha.1` as a GitHub prerelease, and fails if `next` carries a plain `x.y.z`.
-3. Switch your install to it. The two entries share the manifest name `xstack`, so keep only one enabled or Claude Code drops the hooks of one of them:
-
-```sh
-claude plugin disable xstack@xstack
-claude plugin install xstack-next@xstack
-```
-
-4. Pull later prereleases with `claude plugin update xstack-next@xstack`, or turn on auto-update for the `xstack` marketplace under `/plugin`.
-5. Switch back when the change ships:
-
-```sh
-claude plugin uninstall xstack-next@xstack
-claude plugin enable xstack@xstack
-```
+Set a prerelease version such as `0.8.0-alpha.1` on `next`, rebuild, and push. The release workflow publishes a GitHub prerelease. Each published update needs a new version.
 
 In Codex, pin the marketplace itself to the branch, since the Codex catalog has one entry:
 
@@ -65,3 +42,5 @@ codex plugin marketplace add justinramos101/xstack@next
 Refresh with `codex plugin marketplace upgrade xstack`. Re-add the marketplace without `@next` to switch back.
 
 When the change is ready, open the PR to `main` with the plain version, and reset `next` to `main` after it merges so the next prerelease starts from the release.
+
+Keep the marketplace name `xstack`, entry name `xstack`, and source path `./codex` stable. Both manifests retain their names and skills path so existing Codex installs can update in place. Linked skill users update their checkout and rerun the installer for new skills.

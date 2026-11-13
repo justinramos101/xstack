@@ -7,7 +7,6 @@ const repo = join(dirname(fileURLToPath(import.meta.url)), '..');
 const skipped = new Set(['node_modules', '.DS_Store']);
 export const sharedDocs = ['README.md', 'LICENSE', 'docs/guide', 'assets'];
 const readJson = path => JSON.parse(readFileSync(join(repo, path), 'utf8'));
-const claudeData = readJson('hosts/claude.json');
 const codexData = readJson('hosts/codex.json');
 
 function walk(dir) {
@@ -91,11 +90,6 @@ function skillFiles(skill, frontmatter, render) {
   return files;
 }
 
-function withHint(frontmatter, hint) {
-  const kept = frontmatter.filter(([key]) => key !== 'argument-hint');
-  return hint ? [...kept, ['argument-hint', `argument-hint: ${JSON.stringify(hint)}`]] : kept;
-}
-
 const manifestFiles = (pkg, data) => Object.entries(data.manifests).map(([path, extra]) => [path, json({ ...pkg, ...extra })]);
 
 const control = /[\u0000-\u0008\u000b-\u001f\u007f]/g;
@@ -104,20 +98,6 @@ const tomlString = value => `"${value.replace(/[\\"]/g, '\\$&').replace(/\n/g, '
 const tomlMultiline = value => `"""${value.replace(/\\/g, '\\\\').replace(/"""/g, '""\\"').replace(control, escapeControl)}"""`;
 
 export const hosts = {
-  claude: {
-    dir: 'claude',
-    tokens: {
-      'this skill directory': () => '${CLAUDE_SKILL_DIR}',
-      'skill file': name => `\`\${CLAUDE_PLUGIN_ROOT}/skills/${name}/SKILL.md\``,
-    },
-    skill: (skill, render) => skillFiles(skill, withHint(skill.frontmatter, claudeData.argumentHints[skill.name]), render),
-    agent: (agent, render) => {
-      const fields = [['name', agent.name], ['description', agent.description], ...Object.entries(claudeData.agents[agent.name] ?? {})];
-      return [[`agents/${agent.name}.md`, text(serialize(fields.map(([key, value]) => [key, `${key}: ${value}`]), render(agent.body)), `src/agents/${agent.name}.md`)]];
-    },
-    manifests: pkg => manifestFiles(pkg, claudeData),
-    extras: () => [...walk(join(repo, 'hosts/claude/hooks'))].map(([rel, file]) => [`hooks/${rel}`, file]),
-  },
   codex: {
     dir: 'codex',
     tokens: {
@@ -174,6 +154,7 @@ export function render(host, source) {
   for (const agent of source.agents) host.agent(agent, renderText).forEach(add);
   host.manifests(source.pkg).forEach(add);
   host.extras().forEach(add);
+  for (const agent of source.agents) add([`skills/poteto-mode/references/agents/${agent.name}.md`, text(renderText(agent.body), `src/agents/${agent.name}.md`)]);
   for (const path of source.docs.keys()) origins.set(path, path);
   for (const [path, file] of source.docs) {
     add([path, path.endsWith('.md') ? { ...text(relink(file.bytes.toString('utf8'), path, origins, source.pkg.repository, source.root)), executable: file.executable } : file]);
@@ -182,9 +163,6 @@ export function render(host, source) {
 }
 
 function renderAll(source) {
-  const unknown = (table, names) => Object.keys(table).filter(name => !names.includes(name));
-  const stale = [...unknown(claudeData.argumentHints, source.skills.map(skill => skill.name)), ...unknown(claudeData.agents, source.agents.map(agent => agent.name))];
-  if (stale.length) throw new Error(`hosts/claude.json names what src/ lacks: ${stale.join(', ')}`);
   return Object.values(hosts).map(host => [host, render(host, source)]);
 }
 
@@ -230,7 +208,7 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
       console.error(`generated trees are out of date. Run node scripts/build.mjs\n${problems.join('\n')}`);
       process.exit(1);
     }
-    if (check) console.log('claude/ and codex/ match src/ and hosts/');
+    if (check) console.log('codex/ matches src/ and hosts/');
   } catch (error) {
     console.error(`build failed: ${error.message}`);
     process.exit(1);

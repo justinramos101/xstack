@@ -5,7 +5,7 @@ description: "Use for \"interrogate\", \"adversarial review\", \"multi-model rev
 
 # Interrogate
 
-Read [Host runtime](../poteto-mode/references/host-runtime.md) before using host tools or delegating. Resolve configured roles there even when this skill is invoked directly.
+Read [Codex runtime](../poteto-mode/references/host-runtime.md) before using Codex tools or delegating. Resolve configured roles there even when this skill is invoked directly.
 
 Spawn one reviewer per configured model to adversarially review code changes. The adversarial signal comes from model diversity, not assigned personas. The deliverable is a synthesized verdict. Do NOT auto-apply changes.
 
@@ -25,13 +25,13 @@ Before spawning reviewers, state the intent in one clear paragraph from the user
 
 ## Step 3, Spawn Reviewers
 
-Launch all reviewers in a single message using the host's subagent tool, one per entry in the `interrogate reviewers` role resolved per Host runtime, labeled Reviewer A, B, and so on to match the entry count. With no configured line, the role resolves to xstack's default panel for the host.
+Launch all reviewers in a single message using the exposed subagent tool, one per entry in the `interrogate reviewers` role resolved per Codex runtime, labeled Reviewer A, B, and so on to match the entry count. With no configured line, the role resolves to xstack's Codex default panel.
 
-Each reviewer is a `general-purpose` subagent with a read-only contract, on its resolved entry. Omit model and effort overrides for an `auto` or `inherit-parent` entry, so that reviewer runs on the parent model.
+Give each available reviewer the prompt below and a no-writes contract, on its resolved model entry. Read-only is an assignment, not a separate sandbox. Preserve MCP read tools when the review needs them. Omit model and effort overrides for an `auto` or `inherit-parent` entry, so that reviewer runs on the parent model.
 
-If the host refuses a configured entry, run that reviewer on an inherited worker and report the reduced model diversity. Do not block the review on the model issue. Never treat an alias entry as a refused model or apply this fallback to it.
+If the session cannot run a configured entry, run that reviewer on an inherited worker and report the reduced model diversity. Do not block the review on the model issue. Never treat an alias entry as a refused model or apply this fallback to it.
 
-Read `references/reviewer-prompt.md` and fill in the same template for every reviewer with the stated intent, the diff or file contents, the rubric from `references/rubric.md`, and the code-quality lens from `references/code-quality-review.md`. Pick each subagent's effort for the job, and fast mode only where the host offers it, per the Subagents section of the **poteto-mode** skill.
+Read `references/reviewer-prompt.md` and fill in the same template for every reviewer with the stated intent, the diff or file contents, the rubric from `references/rubric.md`, and the code-quality lens from `references/code-quality-review.md`. Pick each subagent's effort for the job, and fast mode only when the session exposes it, per the Subagents section of the **poteto-mode** skill.
 
 ## Step 4, Synthesize
 

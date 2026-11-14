@@ -5,7 +5,7 @@ description: "Find what a change could break somewhere else before it ships, bey
 
 # Blast radius
 
-Read [Host runtime](../poteto-mode/references/host-runtime.md) before using host tools or delegating. Resolve configured roles there even when this skill is invoked directly.
+Read [Codex runtime](../poteto-mode/references/host-runtime.md) before using Codex tools or delegating. Resolve configured roles there even when this skill is invoked directly.
 
 Find what a change breaks somewhere else, before it ships. Use for "blast radius of X", "what could this break", or reviewing a small diff you don't trust yet.
 

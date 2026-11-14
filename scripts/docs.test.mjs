@@ -5,18 +5,16 @@ import { dirname, join, normalize, relative, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { sharedDocs } from './build.mjs';
 
-// Checks what the README, the guide, and the skills say about the tree: relative
-// links and anchors resolve, slash commands name a real skill, and counts match.
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const src = join(root, 'src');
 const trees = ['codex'].map(dir => join(root, dir));
 const skills = readdirSync(join(src, 'skills')).filter(name => existsSync(join(src, 'skills', name, 'SKILL.md')));
 const principles = skills.filter(name => name.startsWith('principle-'));
 const playbooks = readdirSync(join(src, 'skills/poteto-mode/playbooks')).filter(name => name.endsWith('.md'));
-// Commands that ship with a host, not with xstack.
-// `url` and `name` are placeholders in templates and the glossary.
 const placeholders = new Set(['url', 'name']);
-const external = new Set(['loop', 'plugin', 'goal', 'hooks', 'agents', 'model', 'effort', 'skills', 'clear', 'compact', 'resume']);
+const external = new Set(['plugin', 'goal', 'plan', 'hooks', 'agents', 'model', 'effort', 'skills', 'clear', 'compact', 'resume']);
+const nativeSkills = new Set(['skill-creator', 'skill-installer']);
+const skillPlaceholders = new Set(['name', 'skill-name']);
 
 function walk(dir) {
   return readdirSync(dir).flatMap(name => {
@@ -26,7 +24,7 @@ function walk(dir) {
   });
 }
 const guide = ['README.md', ...readdirSync(join(root, 'docs/guide')).filter(name => name.endsWith('.md')).map(name => `docs/guide/${name}`)].map(doc => join(root, doc));
-const docs = [...new Set([...guide, ...walk(src), ...walk(join(root, 'automations')), ...trees.flatMap(walk)])];
+const docs = [...new Set([...guide, join(root, 'docs/codex-hooks.md'), ...walk(src), ...walk(join(root, 'automations')), ...trees.flatMap(walk)])];
 const strip = text => text.replace(/^(```|~~~)[\s\S]*?^\1/gm, '');
 const inside = (dir, path) => !relative(dir, path).startsWith('..');
 
@@ -71,11 +69,14 @@ test('relative links and anchors resolve', () => {
   assert.deepEqual(problems, []);
 });
 
-test('slash commands in the README and guide name a real skill', () => {
+test('the README and guide use real Codex commands and skill references', () => {
   const problems = [];
   for (const file of guide) {
     for (const [, name] of readFileSync(file, 'utf8').matchAll(/(?<=^|[\s`(|"'>])\/([a-z][a-z0-9-]*)(?![\w/<.-])/gm)) {
-      if (!skills.includes(name) && !external.has(name) && !placeholders.has(name)) problems.push(`${file.slice(root.length + 1)}: /${name}`);
+      if (!external.has(name) && !placeholders.has(name)) problems.push(`${file.slice(root.length + 1)}: /${name}`);
+    }
+    for (const [, name] of readFileSync(file, 'utf8').matchAll(/(?<=^|[\s`(|"'>])\$([a-z][a-z0-9-]*)(?![\w/<.-])/gm)) {
+      if (!skills.includes(name) && !nativeSkills.has(name) && !skillPlaceholders.has(name)) problems.push(`${file.slice(root.length + 1)}: $${name}`);
     }
   }
   assert.deepEqual(problems, []);
@@ -92,12 +93,9 @@ test('counts in the README and guide match the tree', () => {
   assert.deepEqual(problems, []);
 });
 
-test('every skill is named after its folder, and every user-only skill hides from Codex too', () => {
+test('every skill is named after its folder', () => {
   for (const name of skills) {
     const text = readFileSync(join(src, 'skills', name, 'SKILL.md'), 'utf8');
     assert.equal(text.match(/^name: (.+)$/m)?.[1], name);
-    const hidden = /^disable-model-invocation: true$/m.test(text);
-    const openai = join(root, 'codex/skills', name, 'agents', 'openai.yaml');
-    assert.equal(existsSync(openai) && /allow_implicit_invocation: false/.test(readFileSync(openai, 'utf8')), hidden, `codex ${name}`);
   }
 });

@@ -74,6 +74,9 @@
     "statechart creates its mapping scaffold exclusively, so a concurrent writer's mapping is never truncated",
     "Codex model roles preserve the existing AGENTS.md block and legacy shared config fallback",
     "Codex-only rendered distribution retains the existing plugin identity and marketplace path",
-    "Standalone skills include helper prompts and explicit-invocation policies"
+    "Standalone skills include helper prompts and explicit-invocation policies",
+    "Source skills own native Codex agents/openai.yaml metadata instead of translated invocation flags",
+    "Codex runtime instructions use explicit helper prompts, run-local state, and native goals and scheduling terminology",
+    "Maintainers can opt into a bounded generated-file Stop hook; installation enables no hooks"
   ]
 }

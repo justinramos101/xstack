@@ -1,0 +1,4 @@
+interface:
+  display_name: "Set up xstack"
+  short_description: "Configure Codex models and reasoning budgets"
+  default_prompt: "Use $setup-xstack to configure my Codex models and reasoning budget."

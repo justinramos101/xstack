@@ -1,0 +1,6 @@
+interface:
+  display_name: "Poteto help"
+  short_description: "Find the xstack skill or workflow for your task"
+  default_prompt: "Use $poteto-help to find the xstack skill or workflow that fits my task."
+policy:
+  allow_implicit_invocation: false

@@ -11,7 +11,7 @@ Read the copied pack's `../../FOR_AGENTS.md`. These are direct runner instructio
 
 Resolve the target repository from the request. Copy or merge the pack into `.agents/automations/benny/` there. Preserve destination-only files, review conflicts, and keep user-owned configuration outside the copied pack. Use `.agents/benny/` for secret-free project configuration or a user configuration directory when the runner can access it.
 
-Ensure xstack's shared skills are available in the runner's actual checkout and account. Use the supported Codex plugin installation, or project-local skills under the host's skill directory. Never assume a personal plugin cache is available to a remote runner. Verify `how`, `why`, `tdd`, `unslop`, and the required principles in a fresh runner session. If a dependency cannot load, leave the workflows disabled and report what is missing.
+Ensure xstack's shared skills are available in the runner's actual checkout and account. Use the supported Codex plugin installation, or project-local skills under `.agents/skills/`. Never assume a personal plugin cache is available to a remote runner. Verify `how`, `why`, `tdd`, `unslop`, and the required principles in a fresh runner session. If a dependency cannot load, leave the workflows disabled and report what is missing.
 
 Commit the copied pack and any referenced secret-free configuration on the runner's branch when authorized. Otherwise prepare the diff and explain that the runner needs those files before activation. Live prompts use committed repository-relative paths, never a temporary plugin cache path.
 

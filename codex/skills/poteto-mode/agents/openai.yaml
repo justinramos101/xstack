@@ -1,2 +1,6 @@
+interface:
+  display_name: "Poteto mode"
+  short_description: "Use deliberate workflows and verify the result"
+  default_prompt: "Use $poteto-mode to complete this task with deliberate workflows and verified results."
 policy:
   allow_implicit_invocation: false

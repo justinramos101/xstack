@@ -2,7 +2,7 @@
 
 **You own the skill's voice.**
 
-1. Use the host's skill-authoring skill when one is installed; otherwise author the SKILL.md directly (frontmatter `name` and `description`, imperative body).
+1. Use `$skill-creator` when it is available. Otherwise author SKILL.md directly with `name` and `description` frontmatter and concrete instructions. Set invocation policy in `agents/openai.yaml` with `policy.allow_implicit_invocation`, not in SKILL.md frontmatter.
 2. Validate the skill: frontmatter has `name` and `description`, referenced files exist, cross-skill links resolve.
 3. Test cases if structural. Skip if subjective.
 4. Run **Opening a PR**.

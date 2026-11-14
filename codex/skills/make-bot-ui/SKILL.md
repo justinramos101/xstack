@@ -5,11 +5,11 @@ description: Build a page, dashboard, or buttons that trigger a bot, agent, or a
 
 # Make a bot UI
 
-Read [Host runtime](../poteto-mode/references/host-runtime.md). Build a browser UI backed by a small server that sends a validated event to a configured bot webhook. The receiving bot can run on any service with a documented HTTP trigger. A coding-agent session alone is not necessarily a webhook receiver.
+Read [Codex runtime](../poteto-mode/references/host-runtime.md). Build a browser UI backed by a small server that sends a validated event to a configured bot webhook. The receiving bot can run on any service with a documented HTTP trigger. A coding-agent session alone is not necessarily a webhook receiver.
 
 ## Establish the receiving contract
 
-Inspect the project's existing bot integration first. Record the actual endpoint, authentication method, allowed actions, JSON schema, success response, timeout, and idempotency support. Read the provider's documentation when the contract is not in the project. Do not infer a provider from the coding host or invent a webhook URL.
+Inspect the project's existing bot integration first. Record the actual endpoint, authentication method, allowed actions, JSON schema, success response, timeout, and idempotency support. Read the provider's documentation when the contract is not in the project. Do not infer a provider from the Codex session or invent a webhook URL.
 
 If an installed connector can create the requested routine, use its supported API within the user's authorization. Otherwise use an existing endpoint supplied by the user, or build the receiver as part of the requested project if that is in scope. While an endpoint or credential is missing, develop against a local mock and label the UI as connected to the mock. Do not report a live bot integration until a real end-to-end event succeeds.
 
@@ -17,7 +17,7 @@ Choose a small event schema, for example an allowlisted `action`, a bounded `mes
 
 ## Keep credentials on the server
 
-Use an existing secret manager or the host's secure secret-entry flow when available. Otherwise have the user set a server-side environment variable outside chat. A local ignored configuration file is acceptable when the project already uses one, with restrictive file permissions. Check that it is excluded from version control and browser bundles. Never print the credential, read it into chat, put it in a query string, or expose it through a client-prefixed environment variable.
+Use an existing secret manager or an exposed secure secret-entry flow when available. Otherwise have the user set a server-side environment variable outside chat. A local ignored configuration file is acceptable when the project already uses one, with restrictive file permissions. Check that it is excluded from version control and browser bundles. Never print the credential, read it into chat, put it in a query string, or expose it through a client-prefixed environment variable.
 
 Keep the endpoint and authentication configuration on the server. The browser may submit an action and its data; it may not choose the destination URL or headers. Follow the receiver's documented auth contract. Bearer tokens, custom headers, and HMAC signatures are alternatives, not headers to send all at once. Validate the configured destination before sending credentials, require HTTPS outside loopback development, and reject redirects unless their destination has been explicitly validated for that credential.
 

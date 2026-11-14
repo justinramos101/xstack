@@ -1,18 +1,17 @@
 ---
 name: why
 description: "Use for 'why does X work this way', 'why we picked Y', design rationale, regressions, postmortems, or data-backed thresholds. Discovers available MCPs and queries each evidence category (source control, issue tracker, long-form docs, real-time chat, infrastructure observability, error tracking, product analytics warehouse) in parallel, then returns a cited read on decisions and tradeoffs. Use how for runtime behavior."
-disable-model-invocation: true
 ---
 
 # Why
 
-Read [Host runtime](../poteto-mode/references/host-runtime.md) before using host tools or delegating. Resolve configured roles there even when this skill is invoked directly.
+Read [Codex runtime](../poteto-mode/references/host-runtime.md) before using Codex tools or delegating. Resolve configured roles there even when this skill is invoked directly.
 
 Investigate the motivation and intent behind code. The companion `how` skill answers what the code does and how it works. `why` answers what forces led to its shape.
 
-Each spawn below names a role, resolved per Host runtime. Omit model and effort overrides when the value is `auto` or `inherit-parent`. If the host refuses a configured model, run that subagent on the parent model and say so. Pick each subagent's effort for the job, and fast mode only where the host offers it, per the Subagents section of the **poteto-mode** skill.
+Each spawn below names a role, resolved per Codex runtime. Omit model and effort overrides when the value is `auto` or `inherit-parent`. If the session cannot run a configured model, run that subagent on the parent model and say so. Pick each subagent's effort for the job, and fast mode only when the session exposes it, per the Subagents section of the **poteto-mode** skill.
 
-Every spawn is a `general-purpose` subagent with a no-writes contract in its brief. Keep MCP access. **Do not pick a host mode that strips MCP tools.** That disables the MCP-backed investigators and the synthesizer's citation spot-checks. Use the read-only controls the host actually offers per Host runtime only when they keep the needed MCP read tools.
+Give each available agent its referenced prompt and an explicit no-writes contract. Read-only is an assignment, not a separate sandbox. Keep the MCP read tools the investigators and synthesizer need for evidence and citation checks, subject to the actual session permissions.
 
 ## Operating Posture
 
@@ -34,7 +33,7 @@ Before spawning investigators, build the seed context inline: file paths and lin
 
 ### Discovery
 
-Before spawning investigators, enumerate the MCP tools available in this session through the host's tool catalog. Do not assume a filesystem directory exposes enabled integrations.
+Before spawning investigators, enumerate the MCP tools available in this session through the session's tool catalog. Do not assume a filesystem directory exposes enabled integrations.
 
 Map each available MCP to one evidence category:
 

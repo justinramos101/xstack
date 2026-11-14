@@ -1,7 +1,6 @@
 ---
 name: poteto-help
-description: Guides users through xstack setup, /poteto-mode, and picking the skill, playbook, or principle for a task. Type /poteto-help with a question.
-disable-model-invocation: true
+description: Guides users through xstack setup, $poteto-mode, and picking the skill, playbook, or principle for a task. Type $poteto-help with a question.
 ---
 
 # Poteto help
@@ -17,103 +16,103 @@ This file maps questions to the skills and guide pages that hold the answers. Th
 Infer the need from the message and the conversation. A named situation, such as "which skill reviews a PR?", goes straight to its section. If the need is still unclear, ask one multiple-choice question with these options, using the structured question tool when available, otherwise in chat, then answer only the section they pick:
 
 - Get set up
-- Start a task with `/poteto-mode`
+- Start a task with `$poteto-mode`
 - Pick a skill for a situation
 - Fix a run that went wrong
 - Make xstack my own
 
 Check the state that changes the answer, and mention it only when it does:
 
-- No `# xstack model roles` lines in context does not mean setup never ran: the session may predate setup, or the user may still have the legacy `~/.agents/xstack-models.md`. Run `node <setup-xstack skill directory>/scripts/models.mjs read codex` before you say so. If it names the legacy file, the roles still apply, and `/setup-xstack` moves them to where the host loads them. If it finds no config, `/setup-xstack` hasn't run for this host, so every role inherits the parent model.
-- No `verify-*` skill or other app harness in the project means agents have no scripted way to drive the app. Mention `/create-verification-skill` when the question is about proving a change works.
-- No formal verification skill in the project means no property is checked past what tests reach. Mention `/create-formal-verification-skill` when the question is about a race, an invariant, or another case tests rarely hit. When one exists and the code it covers changed after the commit it records as last in sync, mention `/maintain-formal-verification-skill` if the question touches that code.
+- No `# xstack model roles` lines in context does not mean setup never ran: the session may predate setup, or the user may still have the legacy `~/.agents/xstack-models.md`. Run `node <setup-xstack skill directory>/scripts/models.mjs read codex` before you say so. If it names the legacy file, the roles still apply, and `$setup-xstack` moves them to where Codex loads them. If it finds no config, xstack uses its Codex role defaults. A default model unavailable in this session falls back to the parent.
+- No `verify-*` skill or other app harness in the project means agents have no scripted way to drive the app. Mention `$create-verification-skill` when the question is about proving a change works.
+- No formal verification skill in the project means no property is checked past what tests reach. Mention `$create-formal-verification-skill` when the question is about a race, an invariant, or another case tests rarely hit. When one exists and the code it covers changed after the commit it records as last in sync, mention `$maintain-formal-verification-skill` if the question touches that code.
 
 When the model config is missing and it matters, ask whether the user wants to pick a model for each role and a reasoning budget now. It matters when the user is new, the question is about setup or cost, or the answer depends on which models run. Ask at most once per chat. If the need is also unclear, ask both questions together. Offer two choices:
 
-- Now: give them `/setup-xstack` to type, and answer their question too.
-- Later: answer their question, and add one line saying every role runs on xstack's default models until they run `/setup-xstack`.
+- Now: give them `$setup-xstack` to type, and answer their question too.
+- Later: answer their question, and add one line saying every role runs on xstack's default models until they run `$setup-xstack`.
 
 ## Get set up
 
 1. Install the skills or the optional Codex plugin using the [README](../../README.md#install). Keep only one installation active to avoid duplicate skills.
-2. Run [`/setup-xstack`](../setup-xstack/SKILL.md). It detects the models the host offers, asks for a reasoning budget, maps a model to each role, and writes the roles where the host loads them into every new session: an xstack block in `~/.codex/AGENTS.md`. Then it offers once each to generate a verification skill and a formal verification skill for the project, unless the project already has one.
-3. Start a real task with `/poteto-mode`, a goal, and a check that can pass or fail.
+2. Run [`$setup-xstack`](../setup-xstack/SKILL.md). It detects the models the session exposes, asks for a reasoning budget, maps a model to each role, and writes the roles where Codex loads them into every new session: an xstack block in `~/.codex/AGENTS.md`. Then it offers once each to generate a verification skill and a formal verification skill for the project, unless the project already has one.
+3. Start a real task with `$poteto-mode`, a goal, and a check that can pass or fail.
 
-Installing changes nothing until the user invokes a skill. Only `/setup-xstack` loads from the user's words. Codex accepts `$skill-name`. The [README](../../README.md) and [guide page 1](../../docs/guide/01-setup.md) have the details. Offer to word their first prompt with them, per [`references/prompting.md`](references/prompting.md).
+Installing changes nothing until the user invokes a skill. Only `$setup-xstack` loads from the user's words. Codex accepts `$skill-name`. The [README](../../README.md) and [guide page 1](../../docs/guide/01-setup.md) have the details. Offer to word their first prompt with them, per [`references/prompting.md`](references/prompting.md).
 
-If cost is the worry, say where the tokens go and how to spend fewer. xstack spends extra tokens on subagents and review panels. Rerun `/setup-xstack` and pick a smaller budget or cheaper models. A role set to `auto` or `inherit-parent` runs on the chat's model, which saves tokens when the chat runs on a cheaper model. A shorter panel list runs fewer subagents, one for each entry. Save `/poteto-mode` for work that needs rigor.
+If cost is the worry, say where the tokens go and how to spend fewer. xstack spends extra tokens on subagents and review panels. Rerun `$setup-xstack` and pick a smaller budget or cheaper models. A role set to `auto` or `inherit-parent` runs on the chat's model, which saves tokens when the chat runs on a cheaper model. A shorter panel list runs fewer subagents, one for each entry. Save `$poteto-mode` for work that needs rigor.
 
-xstack runs on Codex. Most workflow skills, including `/poteto-mode`, `/how`, `/why`, and `/teach`, spawn subagents with per-role models, and a few steps need a scheduler such as `/loop`. When the host lacks one of these, the workflow says so and uses what the host has. Both install methods include the helper prompts with poteto-mode. [Host runtime](../poteto-mode/references/host-runtime.md) has the details.
+xstack runs on Codex. Workflows such as `$poteto-mode`, `$how`, `$why`, and `$teach` use available agents and configured role models. Both installation methods bundle helper prompts for sessions that cannot select named agents. Long runs use active-session waits or watchers. Future Scheduled tasks require a user request and exposed scheduling tools. [Codex runtime](../poteto-mode/references/host-runtime.md) defines the fallbacks and scheduling limits.
 
-## Start a task with `/poteto-mode`
+## Start a task with `$poteto-mode`
 
-`/poteto-mode` matches the task to a playbook, copies the playbook's steps into a visible checklist, and runs the other skills as the steps need them. A step it skips stays in the checklist as `skip: <reason>`. A good prompt states the goal and how to tell it's done. It doesn't list skills, because a hand-written sequence tends to drop or reorder steps the playbook would keep. Read [`references/prompting.md`](references/prompting.md) before you help word one. [Guide page 2](../../docs/guide/02-poteto-mode.md) has examples.
+`$poteto-mode` matches the task to a playbook, copies the playbook's steps into a visible checklist, and runs the other skills as the steps need them. A step it skips stays in the checklist as `skip: <reason>`. A good prompt states the goal and how to tell it's done. It doesn't list skills, because a hand-written sequence tends to drop or reorder steps the playbook would keep. Read [`references/prompting.md`](references/prompting.md) before you help word one. [Guide page 2](../../docs/guide/02-poteto-mode.md) has examples.
 
-Invoking `/poteto-mode` loads the skill into the chat. It can fade as a long chat moves on or after the host compacts the context, so start each new task with `/poteto-mode`. Link the host's skills docs when this comes up: [Codex](https://learn.chatgpt.com/docs/build-skills).
+Invoking `$poteto-mode` loads the skill into the chat. It can fade as a long chat moves on or after Codex compacts the context, so start each new task with `$poteto-mode`. Link the [Codex skills documentation](https://learn.chatgpt.com/docs/build-skills).
 
-Mid-chat, "new task" makes the mode match a fresh playbook. `/poteto-mode` already uses `poteto-agent` for the subagents its playbook steps spawn. To get the same style from a subagent of your own, spawn the `poteto-agent` agent.
+Mid-chat, "new task" makes the mode match a fresh playbook. `$poteto-mode` already uses `poteto-agent` for the subagents its playbook steps spawn. For a delegate of your own, select `poteto-agent` when the tool supports it, or pass its full bundled prompt per Codex runtime.
 
 ## Pick a skill
 
-The default answer is `/poteto-mode`, which runs most of the others when its steps need them. Name a skill directly when the user wants more or less of something than the playbook gives. Read the skill before you recommend it, and give one example prompt.
+The default answer is `$poteto-mode`, which runs most of the others when its steps need them. Name a skill directly when the user wants more or less of something than the playbook gives. Read the skill before you recommend it, and give one example prompt.
 
 | The user wants to | Skill |
 |---|---|
-| Do any non-trivial task with rigor | [`/poteto-mode`](../poteto-mode/SKILL.md) |
-| Check that the agent understood their goal and the problem before it starts | [`/in-your-own-words`](../in-your-own-words/SKILL.md) |
-| Get a prompt rewritten deeper, not bigger, before sending it: what a top professional would add, their raw material and methods, and an outside check. It returns the prompt and doesn't do the task | [`/sharpen`](../sharpen/SKILL.md) |
-| Know how code works now, or where new code should live | [`/how`](../how/SKILL.md) |
-| Know why code is shaped this way, or where a number came from | [`/why`](../why/SKILL.md) |
-| Understand a change or subsystem, explained plainly | [`/teach`](../teach/SKILL.md) |
-| Catch up on their own recent work on a topic | [`/recall`](../recall/SKILL.md) |
-| Catch up on what changed in this chat since their last message, in plain words and small visuals, with every item waiting on them listed and decidable from the reply alone | [`/ketchup`](../ketchup/SKILL.md) |
-| Catch up like `/ketchup`, in a short silent video of slides, with the waiting calls as text under it | [`/ketchup-video`](../ketchup-video/SKILL.md) |
-| Know what a small diff could break outside itself | [`/blast-radius`](../blast-radius/SKILL.md) |
-| Settle types and module shape before code that crosses a function boundary | [`/architect`](../architect/SKILL.md) |
-| Get several attempts at one brief, merged into the best one | [`/arena`](../arena/SKILL.md) |
-| Run parallel checks over slices, or race workers, in isolated worktrees or remote workers | [`/swarm`](../swarm/SKILL.md) |
-| Have a panel of reviewers, on different models when configured, review a diff and try to break it | [`/interrogate`](../interrogate/SKILL.md) |
-| Fix a bug test-first when a cheap local test exists | [`/tdd`](../tdd/SKILL.md) |
-| Apply TypeScript rules to `.ts` or `.tsx` work | [`/typescript-best-practices`](../typescript-best-practices/SKILL.md) |
-| Strip comments before review, using a reviewer that didn't write them | [`/no-comments`](../no-comments/SKILL.md) |
-| Clean AI tells out of prose | [`/unslop`](../unslop/SKILL.md) |
-| Write docs, an RFC, a README, a PR description, or a commit message to a standard | [`/technical-writing`](../technical-writing/SKILL.md) |
-| Hear the last reply again in plain words | [`/bro`](../bro/SKILL.md) |
-| Give agents a scripted way to drive the app and prove behavior | [`/create-verification-skill`](../create-verification-skill/SKILL.md) |
-| Bring a verification skill and its feature map back in line with the app | [`/maintain-verification-skill`](../maintain-verification-skill/SKILL.md) |
-| Formally verify a race, invariant, or other property that tests rarely reach | [`/create-formal-verification-skill`](../create-formal-verification-skill/SKILL.md) |
-| Bring a formal verification back in line after the code it covers changed, and learn whether a failure is drift or a bug | [`/maintain-formal-verification-skill`](../maintain-formal-verification-skill/SKILL.md) |
-| Show a PM or designer what the user sees as a chart checked by a model, with each bug drawn as a numbered path, turn an agreed chart into a TLA+ skeleton, or audit the code against its TLA+ spec | [`/statechart`](../statechart/SKILL.md) |
-| Vet a performance number before reporting or acting on it | [`/benchmark-checklist`](../benchmark-checklist/SKILL.md) |
-| Run a large or cross-cutting change, or one to review after stepping away | [`/figure-it-out`](../figure-it-out/SKILL.md) |
-| Keep a decision log during a run, and review it afterward | [`/show-me-your-work`](../show-me-your-work/SKILL.md) |
-| Pick a model for each role and a reasoning budget | [`/setup-xstack`](../setup-xstack/SKILL.md) |
-| Turn their own working habits into a personal mode skill | [`/automate-me`](../automate-me/SKILL.md) |
-| Turn what a finished task taught into skill edits | [`/reflect`](../reflect/SKILL.md) |
-| Stop agents from repeating the same mistakes in this repo | [`/correct`](../correct/SKILL.md) |
-| Build a page whose buttons trigger a bot, agent, or automation over a webhook | [`/make-bot-ui`](../make-bot-ui/SKILL.md) |
-| Find their way around xstack | `/poteto-help` |
+| Do any non-trivial task with rigor | [`$poteto-mode`](../poteto-mode/SKILL.md) |
+| Check that the agent understood their goal and the problem before it starts | [`$in-your-own-words`](../in-your-own-words/SKILL.md) |
+| Get a prompt rewritten deeper, not bigger, before sending it: what a top professional would add, their raw material and methods, and an outside check. It returns the prompt and doesn't do the task | [`$sharpen`](../sharpen/SKILL.md) |
+| Know how code works now, or where new code should live | [`$how`](../how/SKILL.md) |
+| Know why code is shaped this way, or where a number came from | [`$why`](../why/SKILL.md) |
+| Understand a change or subsystem, explained plainly | [`$teach`](../teach/SKILL.md) |
+| Catch up on their own recent work on a topic | [`$recall`](../recall/SKILL.md) |
+| Catch up on what changed in this chat since their last message, in plain words and small visuals, with every item waiting on them listed and decidable from the reply alone | [`$ketchup`](../ketchup/SKILL.md) |
+| Catch up like `$ketchup`, in a short silent video of slides, with the waiting calls as text under it | [`$ketchup-video`](../ketchup-video/SKILL.md) |
+| Know what a small diff could break outside itself | [`$blast-radius`](../blast-radius/SKILL.md) |
+| Settle types and module shape before code that crosses a function boundary | [`$architect`](../architect/SKILL.md) |
+| Get several attempts at one brief, merged into the best one | [`$arena`](../arena/SKILL.md) |
+| Run parallel checks over slices, or race workers, in isolated worktrees or remote workers | [`$swarm`](../swarm/SKILL.md) |
+| Have a panel of reviewers, on different models when configured, review a diff and try to break it | [`$interrogate`](../interrogate/SKILL.md) |
+| Fix a bug test-first when a cheap local test exists | [`$tdd`](../tdd/SKILL.md) |
+| Apply TypeScript rules to `.ts` or `.tsx` work | [`$typescript-best-practices`](../typescript-best-practices/SKILL.md) |
+| Strip comments before review, using a reviewer that didn't write them | [`$no-comments`](../no-comments/SKILL.md) |
+| Clean AI tells out of prose | [`$unslop`](../unslop/SKILL.md) |
+| Write docs, an RFC, a README, a PR description, or a commit message to a standard | [`$technical-writing`](../technical-writing/SKILL.md) |
+| Hear the last reply again in plain words | [`$bro`](../bro/SKILL.md) |
+| Give agents a scripted way to drive the app and prove behavior | [`$create-verification-skill`](../create-verification-skill/SKILL.md) |
+| Bring a verification skill and its feature map back in line with the app | [`$maintain-verification-skill`](../maintain-verification-skill/SKILL.md) |
+| Formally verify a race, invariant, or other property that tests rarely reach | [`$create-formal-verification-skill`](../create-formal-verification-skill/SKILL.md) |
+| Bring a formal verification back in line after the code it covers changed, and learn whether a failure is drift or a bug | [`$maintain-formal-verification-skill`](../maintain-formal-verification-skill/SKILL.md) |
+| Show a PM or designer what the user sees as a chart checked by a model, with each bug drawn as a numbered path, turn an agreed chart into a TLA+ skeleton, or audit the code against its TLA+ spec | [`$statechart`](../statechart/SKILL.md) |
+| Vet a performance number before reporting or acting on it | [`$benchmark-checklist`](../benchmark-checklist/SKILL.md) |
+| Run a large or cross-cutting change, or one to review after stepping away | [`$figure-it-out`](../figure-it-out/SKILL.md) |
+| Keep a decision log during a run, and review it afterward | [`$show-me-your-work`](../show-me-your-work/SKILL.md) |
+| Pick a model for each role and a reasoning budget | [`$setup-xstack`](../setup-xstack/SKILL.md) |
+| Turn their own working habits into a personal mode skill | [`$automate-me`](../automate-me/SKILL.md) |
+| Turn what a finished task taught into skill edits | [`$reflect`](../reflect/SKILL.md) |
+| Stop agents from repeating the same mistakes in this repo | [`$correct`](../correct/SKILL.md) |
+| Build a page whose buttons trigger a bot, agent, or automation over a webhook | [`$make-bot-ui`](../make-bot-ui/SKILL.md) |
+| Find their way around xstack | `$poteto-help` |
 
 If a skill directory next to this one is missing from the table, read its frontmatter and route by its description. The `principle-*` directories are covered under principles below.
 
 Close calls:
 
-- `/how` explains what the code does. `/why` explains the reasons. `/teach` runs one or both and explains the result plainly.
-- `/arena` gives every worker the same brief and merges the best parts. `/swarm` splits work into slices or a race and returns one report.
-- `/architect` implements right after it settles the design. Add "with checkpoint" to review the design before it writes code.
-- `/interrogate` reviews the diff. `/blast-radius` looks for breakage outside the diff and proves the one fact that makes the change safe.
-- `/recall` rebuilds context across recent chats. `/ketchup` covers only this chat since the user's last message. Resuming one specific chat or branch is the Session pickup playbook.
-- `/figure-it-out` designs one rigorous run. The Orchestrate playbook runs a program that spans days and many PRs. The Autonomous run playbook drives one task to a finish condition.
+- `$how` explains what the code does. `$why` explains the reasons. `$teach` runs one or both and explains the result plainly.
+- `$arena` gives every worker the same brief and merges the best parts. `$swarm` splits work into slices or a race and returns one report.
+- `$architect` implements right after it settles the design. Add "with checkpoint" to review the design before it writes code.
+- `$interrogate` reviews the diff. `$blast-radius` looks for breakage outside the diff and proves the one fact that makes the change safe.
+- `$recall` rebuilds context across recent chats. `$ketchup` covers only this chat since the user's last message. Resuming one specific chat or branch is the Session pickup playbook.
+- `$figure-it-out` designs one rigorous run. The Orchestrate playbook runs a program that spans days and many PRs. The Autonomous run playbook drives one task to a finish condition.
 
 Not in xstack:
 
 - xstack has no `/deslop` skill. A deslop pass is a playbook step. App drivers come from the project's `verify-*` skill or an available browser, native-app, or CLI tool.
-- `/loop` and skill-authoring skills such as `create-skill` come from the host or other plugins, when present.
-- xstack has no `/orchestrate` skill. Orchestrate is a `/poteto-mode` playbook. If the slash menu shows `/orchestrate`, another plugin provides it.
+- Active-session waits use the exposed wait or watcher tools. Native Scheduled tasks require a user request and scheduling tools. `$skill-creator` is an optional authoring skill; valid SKILL.md files can also be written directly.
+- xstack has no `/orchestrate` skill. Orchestrate is a `$poteto-mode` playbook. If the slash menu shows `/orchestrate`, another plugin provides it.
 
 ## Playbooks and principles
 
-Playbooks are step lists inside `/poteto-mode`, not skills, so they have no slash command. Inside `/poteto-mode`, describing the task picks one, and these phrases name one directly:
+Playbooks are step lists inside `$poteto-mode`, not skills, so they have no slash command. Inside `$poteto-mode`, describing the task picks one, and these phrases name one directly:
 
 - "babysit this pr" or "check on pr 123" runs Babysit. It drives the PR to merge-ready and stops there. It doesn't merge unless the user asks to merge, land, or ship.
 - "land the stack" runs Shipping.
@@ -122,32 +121,32 @@ Playbooks are step lists inside `/poteto-mode`, not skills, so they have no slas
 - "full autopilot on this queue" runs Autopilot-full. "stack them, don't ship" runs Autopilot-stack.
 - "run the eval playbook" runs Eval.
 
-Without `/poteto-mode`, a phrase such as "babysit this pr" can start another installed skill for the same job instead. The Playbooks section of [`poteto-mode`](../poteto-mode/SKILL.md) lists every playbook and when it applies. [Guide page 6](../../docs/guide/06-verify-and-ship.md) covers opening, babysitting, and landing a PR.
+Without `$poteto-mode`, a phrase such as "babysit this pr" can start another installed skill for the same job instead. The Playbooks section of [`poteto-mode`](../poteto-mode/SKILL.md) lists every playbook and when it applies. [Guide page 6](../../docs/guide/06-verify-and-ship.md) covers opening, babysitting, and landing a PR.
 
-xstack has no planning skill. The host's plan mode, where it has one, works alongside it. For work that spans phases or stacked PRs, asking `/poteto-mode` for a plan runs the [Multi-phase plan playbook](../poteto-mode/playbooks/multi-phase-plan.md), which writes the plan and doesn't implement it. For a design question, the Prototype playbook or `/architect` settles it in code first.
+xstack has no planning skill. Codex Plan mode works alongside it when available. For work that spans phases or stacked PRs, asking `$poteto-mode` for a plan runs the [Multi-phase plan playbook](../poteto-mode/playbooks/multi-phase-plan.md), which writes the plan and doesn't implement it. For a design question, the Prototype playbook or `$architect` settles it in code first.
 
-Principles are one-rule skills that `/poteto-mode` reads and cites in its replies. The user rarely invokes one. They steer with the names instead, as in "apply prove it works. show me the real output." Typing `/principle-<name>` still loads one on demand. [Guide page 8](../../docs/guide/08-principles.md) lists them.
+Principles are one-rule skills that `$poteto-mode` reads and cites in its replies. The user rarely invokes one. They steer with the names instead, as in "apply prove it works. show me the real output." Typing `/principle-<name>` still loads one on demand. [Guide page 8](../../docs/guide/08-principles.md) lists them.
 
 ## Fix a run that went wrong
 
 | Symptom | Fix |
 |---|---|
-| The mode stopped applying after a few turns | It faded as the chat grew or after compaction. Start each task with `/poteto-mode`. |
+| The mode stopped applying after a few turns | It faded as the chat grew or after compaction. Start each task with `$poteto-mode`. |
 | A question got treated as the next step of the last task | Say "new task", or say the turn doesn't need the mode. |
-| A new model choice had no effect | Check that `/setup-xstack` wrote the host's roles (the xstack block in `~/.codex/AGENTS.md`), that the session started after the write, and that the host's spawn tool lists that model and effort. A role the host can't run falls back to the parent model. |
+| A new model choice had no effect | Check that `$setup-xstack` wrote the Codex roles (the xstack block in `~/.codex/AGENTS.md`), that the session started after the write, and that the exposed spawn tool lists that model and effort. A role the session cannot run falls back to the parent model. |
 | Runs cost more than expected | See the cost paragraph under Get set up. |
-| A skill didn't load on its own | Only `/setup-xstack` loads from the user's words. The others load when the user types them or when `/poteto-mode` runs them, and it doesn't run every skill. |
+| A skill didn't load on its own | Only `$setup-xstack` loads from the user's words. The others load when the user types them or when `$poteto-mode` runs them, and it doesn't run every skill. |
 | Parallel agents overwrote each other | Give each agent its own worktree and explicit file ownership. |
-| An overnight run moved but finished nothing | `/loop` needs a check that can pass or fail, not a duration, and a scheduler that outlives the session. See [guide page 7](../../docs/guide/07-overnight.md). |
+| An overnight run moved but finished nothing | Define a check that can pass or fail and keep the active session running. Request a Scheduled task explicitly if a future turn is needed; local desktop tasks require the machine on and app open. See [guide page 7](../../docs/guide/07-overnight.md). |
 | The reply claims success from a green build | Ask for the real command, flow, stored value, or profile. That's the prove-it-works principle. |
 
 For a run that drifts, [`references/prompting.md`](references/prompting.md) has one-line steers. [Guide page 10](../../docs/guide/10-recipes-and-pitfalls.md) has more pitfalls and the recipes worth copying.
 
 ## Make xstack my own
 
-- [`/automate-me`](../automate-me/SKILL.md) drafts a personal mode skill from the user's own history, to use alongside `/poteto-mode`.
-- [`/reflect`](../reflect/SKILL.md) after a session turns its lessons into skill edits the user approves.
-- `/poteto-mode write a skill for <workflow>` runs the authoring playbook. The eval playbook tests a skill change blind.
+- [`$automate-me`](../automate-me/SKILL.md) drafts a personal mode skill from the user's own history, to use alongside `$poteto-mode`.
+- [`$reflect`](../reflect/SKILL.md) after a session turns its lessons into skill edits the user approves.
+- `$poteto-mode write a skill for <workflow>` runs the authoring playbook. The eval playbook tests a skill change blind.
 - Fix a misbehaving skill in its own PR, not inside the feature work where it went wrong.
 
 [Guide page 9](../../docs/guide/09-make-it-yours.md) covers each of these.

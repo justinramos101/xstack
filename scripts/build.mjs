@@ -41,7 +41,6 @@ export function parseFrontmatter(source, where) {
 }
 
 const field = (frontmatter, key) => frontmatter.find(([name]) => name === key)?.[1].slice(key.length + 1).trim();
-const flag = (frontmatter, key) => /^true(\s|$)/.test(field(frontmatter, key) ?? '');
 const serialize = (frontmatter, body) => `---\n${frontmatter.map(([, line]) => line).join('\n')}\n---\n${body}`;
 
 export function loadSource(root = repo) {
@@ -50,7 +49,9 @@ export function loadSource(root = repo) {
   const skillsDir = join(root, 'src/skills');
   const skills = readdirSync(skillsDir).sort().filter(name => existsSync(join(skillsDir, name, 'SKILL.md'))).map(name => {
     const files = walk(join(skillsDir, name));
-    const { frontmatter, body } = parseFrontmatter(files.get('SKILL.md').bytes.toString('utf8'), `src/skills/${name}/SKILL.md`);
+    const where = `src/skills/${name}/SKILL.md`;
+    const { frontmatter, body } = parseFrontmatter(files.get('SKILL.md').bytes.toString('utf8'), where);
+    if (frontmatter.some(([key]) => key === 'disable-model-invocation')) throw new Error(`${where}: disable-model-invocation is retired; set policy.allow_implicit_invocation in agents/openai.yaml`);
     files.delete('SKILL.md');
     return { name, frontmatter, body, files };
   });
@@ -104,11 +105,7 @@ export const hosts = {
       'this skill directory': () => '<this skill directory>',
       'skill file': name => `the absolute path your parent gave you, else the installed skills path the session announces plus \`/${name}/SKILL.md\`, else a file under the installed plugin directory whose path ends in \`skills/${name}/SKILL.md\`, taking the copy whose \`.codex-plugin/plugin.json\` has the highest \`version\``,
     },
-    skill: (skill, render) => {
-      const files = skillFiles(skill, skill.frontmatter.filter(([key]) => key === 'name' || key === 'description'), render);
-      if (flag(skill.frontmatter, 'disable-model-invocation')) files.push([`skills/${skill.name}/agents/openai.yaml`, text('policy:\n  allow_implicit_invocation: false\n')]);
-      return files;
-    },
+    skill: (skill, render) => skillFiles(skill, skill.frontmatter.filter(([key]) => key === 'name' || key === 'description'), render),
     agent: (agent, render) => [[`agents/${agent.name}.toml`, text(
       `name = ${tomlString(agent.name)}\ndescription = ${tomlString(agent.description)}\ndeveloper_instructions = ${tomlMultiline(render(agent.body).replace(/^\n+/, ''))}\n`,
       `src/agents/${agent.name}.md`,

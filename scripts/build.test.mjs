@@ -53,16 +53,54 @@ test('an unrenderable token or a host variable in src/ fails the build', () => {
   assert.throws(() => parseFrontmatter('---\r\nname: demo\r\n---\r\n', 'demo'), /CRLF/);
 });
 
-test('Codex skills keep only name and description, and the invocation flag becomes openai.yaml', () => {
-  const hidden = skill('hidden', 'name: hidden\ndescription: "a: b"\ndisable-model-invocation: true\nicon: crown\ncolor: yellow\npaths: ["**/*.ts"]', '# Hidden\n', { 'scripts/run.sh': file('#!/bin/sh\n', true) });
-  const open = skill('open', 'name: open\ndescription: d\ndisable-model-invocation: false', '# Open\n');
-  const commented = skill('commented', 'name: commented\ndescription: d\ndisable-model-invocation: true # user only\n# a standalone comment', '# C\n');
-  const codex = render(hosts.codex, source({ skills: [hidden, open, commented] }));
-  assert.equal(read(codex, 'skills/commented/agents/openai.yaml'), 'policy:\n  allow_implicit_invocation: false\n');
+test('Codex skills preserve native metadata bytes and do not invent omitted metadata', () => {
+  const metadata = Buffer.from('# Preserve native fields, comments, and line endings.\r\ninterface:\r\n  display_name: "Demo"\r\n  default_prompt: "Use $hidden with <skill file unknown>."\r\npolicy:\r\n  allow_implicit_invocation: false\r\nfuture_field:\r\n  nested: [one, two]\r\n');
+  const hidden = skill('hidden', 'name: hidden\ndescription: "a: b"\nicon: crown\ncolor: yellow\npaths: ["**/*.ts"]', '# Hidden\n', { 'agents/openai.yaml': { bytes: metadata, executable: false }, 'scripts/run.sh': file('#!/bin/sh\n', true) });
+  const open = skill('open', 'name: open\ndescription: d', '# Open\n');
+  const codex = render(hosts.codex, source({ skills: [hidden, open] }));
   assert.equal(read(codex, 'skills/hidden/SKILL.md'), '---\nname: hidden\ndescription: "a: b"\n---\n# Hidden\n');
-  assert.equal(read(codex, 'skills/hidden/agents/openai.yaml'), 'policy:\n  allow_implicit_invocation: false\n');
+  assert.deepEqual(codex.get('skills/hidden/agents/openai.yaml').bytes, metadata);
   assert.equal(codex.get('skills/hidden/scripts/run.sh').executable, true);
   assert.equal(codex.has('skills/open/agents/openai.yaml'), false);
+});
+
+test('retired invocation metadata fails with the source path and native replacement', () => {
+  const root = mkdtempSync(join(tmpdir(), 'xstack-retired-metadata-'));
+  try {
+    mkdirSync(join(root, 'src/skills/demo'), { recursive: true });
+    for (const value of ['true', 'false', 'true # explicit only']) {
+      writeFileSync(join(root, 'src/skills/demo/SKILL.md'), `---\nname: demo\ndescription: d\ndisable-model-invocation: ${value}\n---\nBody.\n`);
+      assert.throws(() => loadSource(root), /src\/skills\/demo\/SKILL\.md: disable-model-invocation is retired; set policy\.allow_implicit_invocation in agents\/openai\.yaml/);
+    }
+  } finally { rmSync(root, { recursive: true, force: true }); }
+});
+
+test('bundled native metadata preserves the explicit-only skill set', () => {
+  const bundled = loadSource();
+  const explicit = bundled.skills.filter(skill => /^  allow_implicit_invocation: false$/m.test(skill.files.get('agents/openai.yaml')?.bytes.toString('utf8') ?? '')).map(skill => skill.name);
+  assert.deepEqual(explicit, [
+    'architect', 'arena', 'automate-me', 'benchmark-checklist', 'blast-radius', 'bro', 'correct',
+    'create-formal-verification-skill', 'create-verification-skill', 'figure-it-out', 'how',
+    'in-your-own-words', 'interrogate', 'ketchup', 'ketchup-video', 'maintain-formal-verification-skill',
+    'maintain-verification-skill', 'make-bot-ui', 'no-comments', 'poteto-help', 'poteto-mode',
+    'principle-attack-the-premise', 'principle-boundary-discipline', 'principle-build-the-lever',
+    'principle-encode-lessons-in-structure', 'principle-exhaust-the-design-space', 'principle-experience-first',
+    'principle-explain-the-number', 'principle-fix-root-causes', 'principle-foundational-thinking',
+    'principle-guard-the-context-window', 'principle-laziness-protocol', 'principle-make-operations-idempotent',
+    'principle-migrate-callers-then-delete-legacy-apis', 'principle-minimize-reader-load',
+    'principle-model-the-domain', 'principle-never-block-on-the-human', 'principle-outcome-oriented-execution',
+    'principle-prove-it-works', 'principle-redesign-from-first-principles',
+    'principle-separate-before-serializing-shared-state', 'principle-sequence-verifiable-units',
+    'principle-subtract-before-you-add', 'principle-test-behavior-not-implementation',
+    'principle-type-system-discipline', 'recall', 'reflect', 'sharpen', 'show-me-your-work',
+    'statechart', 'swarm', 'tdd', 'teach', 'technical-writing', 'typescript-best-practices', 'unslop', 'why',
+  ]);
+  const codex = render(hosts.codex, bundled);
+  for (const skill of bundled.skills) {
+    const metadata = skill.files.get('agents/openai.yaml');
+    if (metadata) assert.deepEqual(codex.get(`skills/${skill.name}/agents/openai.yaml`).bytes, metadata.bytes, skill.name);
+  }
+  assert.doesNotMatch(read(codex, 'skills/setup-xstack/agents/openai.yaml'), /allow_implicit_invocation/);
 });
 
 test('agent prompts render as Codex TOML that round-trips', () => {

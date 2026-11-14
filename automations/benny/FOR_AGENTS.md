@@ -56,4 +56,4 @@ start from [`configuration.example.yaml`](./templates/configuration.example.yaml
 
 Use this file as the intent specification. Resolve the target repository, merge the source pack into `.agents/automations/benny/` without losing local edits, then read `skills/setup-benny/SKILL.md` from that copied pack. Keep user-owned configuration outside the pack.
 
-Select a supported event runner and verify xstack dependencies in its actual environment. Prepare two job definitions from the templates. Keep them disabled until explicitly authorized and tested. Do not assume the coding host provides a Slack listener, an automation editor, or a persistent scheduler. Do not send messages merely to install or review this pack.
+Select a supported event runner and verify xstack dependencies in its actual environment. Prepare two job definitions from the templates. Keep them disabled until explicitly authorized and tested. Do not assume Codex provides a Slack listener, an automation editor, or a persistent scheduler. Do not send messages merely to install or review this pack.

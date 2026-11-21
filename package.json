@@ -2,7 +2,10 @@
   "name": "xstack-tests",
   "private": true,
   "type": "module",
+  "workspaces": [
+    "src/skills/statechart/scripts"
+  ],
   "scripts": {
-    "test": "node --test scripts/*.test.mjs src/skills/*/scripts/test/*.test.mjs"
+    "test": "node --test scripts/*.test.mjs && npm test --workspace @xstack/statechart"
   }
 }

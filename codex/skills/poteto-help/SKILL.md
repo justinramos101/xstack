@@ -42,11 +42,11 @@ Installing changes nothing until the user invokes a skill. Only `$setup-xstack` 
 
 If cost is the worry, say where the tokens go and how to spend fewer. xstack spends extra tokens on subagents and review panels. Rerun `$setup-xstack` and pick a smaller budget or cheaper models. A role set to `auto` or `inherit-parent` runs on the chat's model, which saves tokens when the chat runs on a cheaper model. A shorter panel list runs fewer subagents, one for each entry. Save `$poteto-mode` for work that needs rigor.
 
-xstack runs on Codex. Workflows such as `$poteto-mode`, `$how`, `$why`, and `$teach` use available agents and configured role models. Both installation methods bundle helper prompts for sessions that cannot select named agents. Long runs use active-session waits or watchers. Future Scheduled tasks require a user request and exposed scheduling tools. [Codex runtime](../poteto-mode/references/host-runtime.md) defines the fallbacks and scheduling limits.
+xstack runs on Codex. `$how` uses one read-only helper when available. `$why` follows the history directly. `$poteto-mode` and its review panels use the configured Codex roles. Both installation methods bundle helper prompts for sessions that cannot select named agents. Long runs use active-session waits or watchers. Future Scheduled tasks require a user request and exposed scheduling tools. [Codex runtime](../poteto-mode/references/host-runtime.md) defines the fallbacks and scheduling limits.
 
 ## Start a task with `$poteto-mode`
 
-`$poteto-mode` matches the task to a playbook, copies the playbook's steps into a visible checklist, and runs the other skills as the steps need them. A step it skips stays in the checklist as `skip: <reason>`. A good prompt states the goal and how to tell it's done. It doesn't list skills, because a hand-written sequence tends to drop or reorder steps the playbook would keep. Read [`references/prompting.md`](references/prompting.md) before you help word one. [Guide page 2](../../docs/guide/02-poteto-mode.md) has examples.
+`$poteto-mode` matches the task to a playbook, copies the playbook's steps into a visible checklist, and runs the other skills as the steps need them. A good prompt states the goal and how to tell it's done. It doesn't list skills, because a hand-written sequence tends to drop or reorder steps the playbook would keep. Read [`references/prompting.md`](references/prompting.md) before you help word one. [Guide page 2](../../docs/guide/02-poteto-mode.md) has examples.
 
 Invoking `$poteto-mode` loads the skill into the chat. It can fade as a long chat moves on or after Codex compacts the context, so start each new task with `$poteto-mode`. Link the [Codex skills documentation](https://learn.chatgpt.com/docs/build-skills).
 
@@ -66,7 +66,7 @@ The default answer is `$poteto-mode`, which runs most of the others when its ste
 | Understand a change or subsystem, explained plainly | [`$teach`](../teach/SKILL.md) |
 | Catch up on their own recent work on a topic | [`$recall`](../recall/SKILL.md) |
 | Catch up on what changed in this chat since their last message, in plain words and small visuals, with every item waiting on them listed and decidable from the reply alone | [`$ketchup`](../ketchup/SKILL.md) |
-| Catch up like `$ketchup`, in a short silent video of slides, with the waiting calls as text under it | [`$ketchup-video`](../ketchup-video/SKILL.md) |
+| Catch up like `$ketchup`, in a short subtitled video, with the waiting calls as text under it | [`$ketchup-video`](../ketchup-video/SKILL.md) |
 | Know what a small diff could break outside itself | [`$blast-radius`](../blast-radius/SKILL.md) |
 | Settle types and module shape before code that crosses a function boundary | [`$architect`](../architect/SKILL.md) |
 | Get several attempts at one brief, merged into the best one | [`$arena`](../arena/SKILL.md) |
@@ -82,7 +82,7 @@ The default answer is `$poteto-mode`, which runs most of the others when its ste
 | Bring a verification skill and its feature map back in line with the app | [`$maintain-verification-skill`](../maintain-verification-skill/SKILL.md) |
 | Formally verify a race, invariant, or other property that tests rarely reach | [`$create-formal-verification-skill`](../create-formal-verification-skill/SKILL.md) |
 | Bring a formal verification back in line after the code it covers changed, and learn whether a failure is drift or a bug | [`$maintain-formal-verification-skill`](../maintain-formal-verification-skill/SKILL.md) |
-| Show a PM or designer what the user sees as a chart checked by a model, with each bug drawn as a numbered path, turn an agreed chart into a TLA+ skeleton, or audit the code against its TLA+ spec | [`$statechart`](../statechart/SKILL.md) |
+| Draw the behavior checked by a TLA+ model and show the paths to broken rules | [`$statechart`](../statechart/SKILL.md) |
 | Vet a performance number before reporting or acting on it | [`$benchmark-checklist`](../benchmark-checklist/SKILL.md) |
 | Run a large or cross-cutting change, or one to review after stepping away | [`$figure-it-out`](../figure-it-out/SKILL.md) |
 | Keep a decision log during a run, and review it afterward | [`$show-me-your-work`](../show-me-your-work/SKILL.md) |
@@ -99,10 +99,10 @@ Close calls:
 
 - `$how` explains what the code does. `$why` explains the reasons. `$teach` runs one or both and explains the result plainly.
 - `$arena` gives every worker the same brief and merges the best parts. `$swarm` splits work into slices or a race and returns one report.
-- `$architect` implements right after it settles the design. Add "with checkpoint" to review the design before it writes code.
-- `$interrogate` reviews the diff. `$blast-radius` looks for breakage outside the diff and proves the one fact that makes the change safe.
+- `$architect` sketches two designs and calls `$arena` for a large or contested choice. Ask for a checkpoint to review the design before implementation.
+- `$interrogate` tries to reproduce failures in the reviewed change, including working-tree edits, and reruns behavioral findings. `$blast-radius` traces what a change could break in its callers.
 - `$recall` rebuilds context across recent chats. `$ketchup` covers only this chat since the user's last message. Resuming one specific chat or branch is the Session pickup playbook.
-- `$figure-it-out` designs one rigorous run. The Orchestrate playbook runs a program that spans days and many PRs. The Autonomous run playbook drives one task to a finish condition.
+- `$figure-it-out` designs the workflow for a large change. Ask for Orchestrate when you need a standing coordinator and a resumable verification ledger across PRs. The Autonomous run playbook drives one task to its finish condition.
 
 Not in xstack:
 
@@ -118,14 +118,14 @@ Playbooks are step lists inside `$poteto-mode`, not skills, so they have no slas
 - "land the stack" runs Shipping.
 - "take over this branch" runs Session pickup.
 - "pause safely" runs Pause safely.
-- "full autopilot on this queue" runs Autopilot-full. "stack them, don't ship" runs Autopilot-stack.
+- "full autopilot on this queue" runs Autopilot-full. "autopilot, keep the PRs open for my review" runs Autopilot-stack. Only dependent PRs stack.
 - "run the eval playbook" runs Eval.
 
 Without `$poteto-mode`, a phrase such as "babysit this pr" can start another installed skill for the same job instead. The Playbooks section of [`poteto-mode`](../poteto-mode/SKILL.md) lists every playbook and when it applies. [Guide page 6](../../docs/guide/06-verify-and-ship.md) covers opening, babysitting, and landing a PR.
 
 xstack has no planning skill. Codex Plan mode works alongside it when available. For work that spans phases or stacked PRs, asking `$poteto-mode` for a plan runs the [Multi-phase plan playbook](../poteto-mode/playbooks/multi-phase-plan.md), which writes the plan and doesn't implement it. For a design question, the Prototype playbook or `$architect` settles it in code first.
 
-Principles are one-rule skills that `$poteto-mode` reads and cites in its replies. The user rarely invokes one. They steer with the names instead, as in "apply prove it works. show me the real output." Typing `/principle-<name>` still loads one on demand. [Guide page 8](../../docs/guide/08-principles.md) lists them.
+Principles are one-rule skills that `$poteto-mode` reads and cites in its replies. The user rarely invokes one. They steer with the names instead, as in "apply prove it works. show me the real output." Invoke `$principle-<name>` to load one directly. [Guide page 8](../../docs/guide/08-principles.md) lists them.
 
 ## Fix a run that went wrong
 

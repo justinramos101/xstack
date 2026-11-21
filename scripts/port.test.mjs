@@ -22,7 +22,7 @@ function check(plan) {
 
 test('unconfigured roles take the Codex default lineup', () => {
   assert.deepEqual(resolveRole('', 'codex', 'bug-fix'), { host: 'codex', role: 'bug-fix', budget: 'unlimited', entries: [{ model: 'gpt-6.1-sol', effort: 'xhigh' }] });
-  assert.deepEqual(resolveRole('', 'codex', 'why synthesizer').entries, [{ model: 'gpt-6-astra', effort: 'xhigh' }]);
+  assert.deepEqual(resolveRole('', 'codex', 'judgment and prose').entries, [{ model: 'gpt-6-astra', effort: 'xhigh' }]);
   assert.deepEqual(resolveRole('# budget: small\n', 'codex', 'arena runners').entries, [{ model: 'gpt-6-astra', effort: 'medium' }, { model: 'gpt-6.1-sol', effort: 'medium' }, { model: 'gpt-6-astra', effort: 'medium' }, { model: 'gpt-6.1-sol', effort: 'medium' }]);
   assert.deepEqual(resolveRole('feature: inherit-parent\n', 'codex', 'feature').entries, [{ model: null, effort: null }]);
 });
@@ -116,7 +116,7 @@ test('the loaded role text names the panels and keeps the judge pool to one judg
   try {
     assert.equal(modelsCli(home, ['write', 'codex'], 'arena cross-judge pool: alpha, beta\n').status, 0);
     const rule = readFileSync(join(home, 'codex-home', 'AGENTS.md'), 'utf8');
-    assert.match(rule, /arena runners, architect runners, and interrogate reviewers spawn one subagent per entry/);
+    assert.match(rule, /arena runners and interrogate reviewers spawn one subagent per entry/);
     assert.match(rule, /arena cross-judge pool lists alternatives for arena's one judge/);
   } finally { rmSync(home, { recursive: true, force: true }); }
 });

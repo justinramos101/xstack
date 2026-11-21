@@ -15,22 +15,22 @@ Every candidate gets the same prompt, so the prompt is the contract.
 
 1. State the artifact each candidate is producing.
 2. Derive the rubric, 3-6 concrete gradeable criteria for what success looks like on *this* task. It is the picker's tool in Phase D. Candidates only see the task.
-3. Pick the runners. Resolve `arena runners` per Codex runtime, one runner per entry. An `auto` or `inherit-parent` entry in this line or the cross-judge line means the parent model, so omit model and effort overrides for it. If the session cannot run a configured entry, run that seat on an inherited worker and report the reduced model diversity. Spawn more runners when the arena covers multiple design directions. Use the same model N times when the work is generation-bound rather than judgment-sensitive. Pick each subagent's effort for the job, and fast mode only when the session exposes it, per the Subagents section of the **poteto-mode** skill.
+3. Resolve `arena runners` per Codex runtime and use one worker per entry. An `auto` or `inherit-parent` entry inherits the parent model and effort. If a configured model is unavailable, use an allowed equivalent in the same family when the host permits substitution. Otherwise drop that entry and record why. Aim for at least two candidates. If only one can run, label the result a single attempt. Repeated models give independent attempts on that model.
 4. Give each candidate its own output location (a git worktree where possible, otherwise `.agents/state/xstack/<run-id>/arena-<slug>/candidate-<n>/`), per the **separate-before-serializing-shared-state** principle skill.
 
 ## Phase B: Fan out
 
-Spawn all N subagents in one message, in the background when supported, each with the task, the path to the shared grounding, its own output path, and instructions to produce the artifact and a short rationale naming the alternatives it considered and what it rejected.
+Start the candidates within the available slots. Give each the worker instructions, the operator’s goal, the task, the path to the shared grounding, its own output path, and instructions to produce the artifact and a short rationale naming the alternatives it considered and what it rejected.
 
 If a candidate produces no output, proceed with N-1 and note the dropout.
 
 ## Phase C: Cross-judge
 
-After all Phase B candidates complete, choose one model from the `arena cross-judge pool` per Codex runtime. Prefer a different model from the parent's when the pool offers one. Spawn one read-only judge subagent on that model. It sees the rubric and the candidates by path label, scores each criterion, and recommends a base with rationale. It runs in parallel with your reading in Phase D. Don't spawn it while candidates are still writing.
+After candidates finish, choose the first available explicit entry in the `arena cross-judge pool` whose vendor differs from the parent’s, using host model metadata. Skip `auto`, `inherit-parent`, and unavailable entries. If the parent vendor is unknown, the first available explicit entry may judge; disclose that the vendor check was unavailable. If no eligible entry can run, skip this phase and report why. Give the read-only judge the rubric and candidates by anonymous path label. Ask it to score each criterion and recommend a base.
 
 ## Phase D: Pick a base
 
-Read every candidate end to end before picking. Score each against the rubric criterion by criterion, not on holistic feel, and compare with the cross-judge. Agreement on the base confirms the pick. Disagreement means one of you is biased or the rubric was ambiguous. Read both rationales before deciding.
+Read every candidate end to end before picking. Score each against the rubric criterion by criterion, not on holistic feel, and compare with the cross-judge when one ran. Read both rationales when they disagree.
 
 Pick the base a future maintainer can extend most easily without breaking invariants. When two feel tied, prefer the cleaner boundary or smaller API, per the Laziness Protocol.
 
@@ -46,4 +46,4 @@ Verify the synthesized artifact like any other output, per the **prove-it-works*
 
 ## Outputs
 
-One synthesized artifact, with a short synthesis note alongside naming the base and why, the cross-judge's verdict, each graft with its source candidate, what was rejected and why, any convergence or dropouts, and the verification result.
+One synthesized artifact, with a short synthesis note alongside naming the base and why, the cross-judge's verdict or why it was skipped, each graft with its source candidate, what was rejected and why, any convergence or dropouts, and the verification result.

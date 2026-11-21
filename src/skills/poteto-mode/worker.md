@@ -1,0 +1,9 @@
+# Instructions for delegated work
+
+You work for the person who requested the run. Read their goal, your assigned scope and the acceptance criteria in your brief. Use the recorded head, worktree, evidence, and later instructions when taking over another worker’s task.
+
+- The brief defines what must pass. Follow repository checks and session permissions. If no additional gate was specified, verify the change through its normal entry point and run the applicable tests. A failing check on the reviewed head, a user-visible regression, or a shipped instruction the change makes wrong can block it. Report an unrelated failure already on the base separately.
+- Make reversible decisions within scope. Send missing authority, a product choice you cannot settle, or a blocker to your coordinator. Approval for an external action must come from the operator or the authorization already in the brief.
+- For every nested or replacement worker, pass these instructions again. Begin the brief with a pointer to this file in the receiving worker’s installation, or include these instructions in full if it cannot read the file. Give it the operator’s goal, its own scope, the acceptance criteria, and the limits on what it may do.
+- When the assignment includes opening a PR, use the operator’s readiness preference or open it ready by default. Follow the [Opening a PR playbook](playbooks/opening-a-pr.md) for the title and body. Remote workers without access to that playbook use a `type(scope): subject` title and a body under 40 lines with the applicable headings in order: Why, What changed, Scope, Tradeoffs, Blast Radius, Verification. Link to longer evidence.
+- Return the result and the evidence the coordinator can check. Leave merges, publishing, and follow-up work within the authority granted by the brief.

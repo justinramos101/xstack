@@ -6,22 +6,23 @@ Follow the [installation instructions](../../README.md#install) for Codex.
 
 xstack needs git and Codex. A few workflows need more, and you can add those when you reach them:
 
-- **GitHub CLI (`gh`), logged in**, for opening, babysitting, and shipping pull requests. If the [Origin](https://cursor.com/docs/origin) CLI is installed and can resolve the repository, the PR workflows use it instead of `gh`.
+- **PR tools** for opening and babysitting PRs. Use the active host’s tools when available, an authenticated GitHub CLI (`gh`) for GitHub, or the [Origin](https://cursor.com/docs/origin) CLI for an Origin repository.
 - **[Bun](https://bun.sh)** for babysitting and shipping through GitHub, where it runs the bundled PR watcher, and for the Orchestrate playbook's bookkeeping script. Opening a PR and the Origin paths need no Bun.
 - **Goal mode or a scheduled task** for unattended work. Active-session checks stop when the session ends. [Overnight work](./07-overnight.md) covers what each client can keep running.
 - **A way to drive your app** for UI verification. The [verify and ship](./06-verify-and-ship.md#create-a-project-verification-skill) page shows how to generate one.
 
 ## Pick your models
 
-Invoke `$setup-xstack` in Codex CLI or the IDE extension, or select it from the desktop app's skill picker. It reads the models and efforts the Codex subagent tool offers, asks for a reasoning budget, and writes the roles into a marked xstack block in `~/.codex/AGENTS.md` for new sessions. The rest of your `AGENTS.md` stays as it was. Until you run it, every role uses xstack's defaults, mapped from pstack's lineup of a fast coding model and a stronger judgment model, all at xhigh:
+Invoke `$setup-xstack` in Codex CLI or the IDE extension, or select it from the desktop app's skill picker. It reads the models and efforts the Codex subagent tool offers, asks for a reasoning budget, and writes the roles into a marked xstack block in `~/.codex/AGENTS.md` for new sessions. The rest of your `AGENTS.md` stays as it was. Until you run it, every role uses xstack's defaults, with a fast coding model and a stronger judgment model, both at xhigh:
 
 | Roles | Codex |
 | --- | --- |
-| feature, refactoring, bug-fix, perf-issue, hillclimb, how explorer, why investigators, reflect tooling, swarm workers | `gpt-6.1-sol @ xhigh` |
-| judgment and prose, hardest tasks, how explainer, why synthesizer, reflect judgment, divergent, synthesizer | `gpt-6-astra @ xhigh` |
-| arena runners, arena cross-judge pool, architect runners, interrogate reviewers | `gpt-6-astra @ xhigh, gpt-6.1-sol @ xhigh`, twice over |
+| feature, refactoring, bug-fix, perf-issue, hillclimb, swarm workers | `gpt-6.1-sol @ xhigh` |
+| judgment and prose, hardest tasks | `gpt-6-astra @ xhigh` |
+| arena runners, interrogate reviewers | `gpt-6-astra @ xhigh, gpt-6.1-sol @ xhigh`, twice over |
+| arena cross-judge pool | `gpt-6-astra @ xhigh, gpt-6.1-sol @ xhigh` |
 
-When subagents are available, panels run independent workers. Model diversity requires distinct supported models. The workflow reports any fallback that reduces independence or model diversity.
+When subagents are available, panels run independent workers. Model diversity requires distinct supported models. The workflow reports any fallback that reduces independence or model diversity. Arena selects at most one judge from its pool. With only OpenAI models available it reports that the cross-vendor judge was skipped.
 
 A budget sets a reasoning effort target, not a dollar limit:
 
@@ -36,7 +37,7 @@ Not every Codex session and model supports every effort. When the target is unsu
 
 The [Codex runtime](../../src/skills/poteto-mode/references/host-runtime.md) defines model resolution, agent fallbacks, local worktrees, transcript lookup, and scheduling. Each workflow reads that file when you invoke the workflow directly. Tool names and limits depend on the active session.
 
-You only override what you care about. To change a role later, rerun `$setup-xstack`. The new roles apply to new sessions. If you set up an earlier xstack, setup reads your old `~/.agents/xstack-models.md` once and moves the Codex roles over. Keep the old file for rollback. The Codex block takes precedence.
+You only override what you care about. To change a role later, rerun `$setup-xstack`. The new roles apply to new sessions. If you set up an earlier xstack, setup reads your old `~/.agents/xstack-models.md` once and moves the Codex roles over. Keep the old file for rollback. The Codex block takes precedence. Setup drops retired skill roles when it next writes your configuration. Your other role choices and budget carry forward.
 
 ## Accept the verification offers, or don't
 

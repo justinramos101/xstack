@@ -1,70 +1,26 @@
 ---
 name: interrogate
-description: "Use for \"interrogate\", \"adversarial review\", \"multi-model review\", \"challenge this\", \"stress test this code\", \"find blind spots\", or \"tear this apart\". Multiple LLM reviewers challenge changes from independent angles."
+description: "Use for adversarial review of a change or design, to stress-test a branch, or when the user asks to interrogate it. Reviewers reproduce failures and the lead verifies each finding."
 ---
 
 # Interrogate
 
-Read [Codex runtime](../poteto-mode/references/host-runtime.md) before using Codex tools or delegating. Resolve configured roles there even when this skill is invoked directly.
+Read [Codex runtime](../poteto-mode/references/host-runtime.md) before delegating. Return a review to the operator. Keep all experiments and their files outside the operator’s working tree.
 
-Spawn one reviewer per configured model to adversarially review code changes. The adversarial signal comes from model diversity, not assigned personas. The deliverable is a synthesized verdict. Do NOT auto-apply changes.
+## Frame the review
 
-## Step 1, Scope
+Use the scope the operator names. By default review the branch since its merge base with the target branch, including the current index, unstaged tracked changes and relevant untracked files. Restate the intended behavior from the request, commits and PR description. For a design, name the decision and the observable result a prototype could establish.
 
-Identify what to review from context:
+## Give each reviewer the same change
 
-- If the user points at specific files or a diff, use that.
-- If on a feature branch, run `git diff main...HEAD` (or the appropriate base branch) for the full changeset.
-- If the user's message references recent work, gather the relevant files.
+Use the `interrogate reviewers` role and the runner selection in [Arena](../arena/SKILL.md). Start each reviewer at the exact review head in its own disposable worktree or isolated copy. Capture the scoped tracked changes once with `git diff --binary HEAD -- <paths>` and apply the patch to each copy if it is nonempty. Include relevant new files from `git ls-files --others --exclude-standard -z -- <paths>`, preserving their paths and contents. For a staged-only review, use the index snapshot instead. Confirm each copy contains the reviewed changes before running checks. Send remote workers only material they are authorized to receive. Keep ignored files and unrelated changes in place. If the same snapshot cannot reach a remote reviewer, review locally and report the resulting coverage.
 
-Package the diff or file contents with any surrounding context files the reviewers need to understand the code.
+Give each reviewer the shared worker instructions, the same goal and expected behavior, and this brief:
 
-## Step 2, Intent
+> Try the change through its real callers. Use a failing test, a small reproduction, or command output to demonstrate each behavioral finding. For a design, probe the current code or build a disposable prototype. Keep reproductions in your assigned worktree and return the exact command, any fixture or patch needed to rerun it, what it printed, and the result the operator should expect. Leave the reviewed code as supplied. An empty findings list is valid.
 
-Before spawning reviewers, state the intent in one clear paragraph from the user's message, commit messages, the PR description if one exists, and the code. If you're unsure about the intent, ask the user before proceeding.
+## Rerun and report
 
-## Step 3, Spawn Reviewers
+Rerun each reported command against a fresh copy of the same snapshot with its reproduction files. Compare with the base when attribution is unclear. Keep each failure you can reproduce that breaks the stated intent, even if only one reviewer found it. Merge reports with the same root cause. Check findings locally if delegation is unavailable and disclose the reduced independence.
 
-Launch all reviewers in a single message using the exposed subagent tool, one per entry in the `interrogate reviewers` role resolved per Codex runtime, labeled Reviewer A, B, and so on to match the entry count. With no configured line, the role resolves to xstack's Codex default panel.
-
-Give each available reviewer the prompt below and a no-writes contract, on its resolved model entry. Read-only is an assignment, not a separate sandbox. Preserve MCP read tools when the review needs them. Omit model and effort overrides for an `auto` or `inherit-parent` entry, so that reviewer runs on the parent model.
-
-If the session cannot run a configured entry, run that reviewer on an inherited worker and report the reduced model diversity. Do not block the review on the model issue. Never treat an alias entry as a refused model or apply this fallback to it.
-
-Read `references/reviewer-prompt.md` and fill in the same template for every reviewer with the stated intent, the diff or file contents, the rubric from `references/rubric.md`, and the code-quality lens from `references/code-quality-review.md`. Pick each subagent's effort for the job, and fast mode only when the session exposes it, per the Subagents section of the **poteto-mode** skill.
-
-## Step 4, Synthesize
-
-As results come back, build a unified picture. Parse every reviewer's findings. Merge findings that describe the same issue differently, and note which models raised each one. Findings two or more models raised independently are the highest signal. Read a lone model's finding, but weight it accordingly. Note disagreements. If one model flags something and another explicitly says the opposite, that is context for the verdict.
-
-## Step 5, Lead Judgment
-
-You are the lead reviewer, a pragmatic senior engineer, not a neutral aggregator. Read `references/lead-judgment.md` for the full framework. Put every finding in one of four buckets, with the model(s) that raised it and a one-line rationale.
-
-- **Act on**. Real issues affecting correctness, security, or maintainability given the actual goals. They would block a real PR.
-- **Consider**. Legitimate, but you're not sure they outweigh the cost of addressing them now. Worth the user's attention.
-- **Noted**. Technically valid but not actionable. Context-dependent, premature optimization, or low-impact at this stage.
-- **Dismissed**. Wrong, nitpicky, or missing context, with a brief reason.
-
-## Output Format
-
-### Intent
-> [The stated intent paragraph from Step 2]
-
-### Reviewers
-- Reviewer [label]: [model name], [N findings] (one bullet per reviewer)
-
-### Act On
-[Each: description, which models raised it, why it matters.]
-
-### Consider
-[Each: description, which models raised it, the tradeoff.]
-
-### Noted
-[Brief list.]
-
-### Dismissed
-[Each with a brief rationale.]
-
-### Agreement Map
-[Where models agreed and diverged, and what that pattern tells us.]
+State the intent. For each verified finding give the command, observed and expected results, affected behavior, and reviewer. Summarize dropped findings and their reasons. When the requested scope includes design tradeoffs that a run cannot settle, identify them separately as judgments with their assumptions and supporting evidence. Report any unavailable checks or reviewers.

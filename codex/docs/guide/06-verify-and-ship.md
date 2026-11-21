@@ -30,7 +30,7 @@ For a small diff you don't fully trust, [`$blast-radius`](../../skills/blast-rad
 
 ## Vet a measured number with `$benchmark-checklist`
 
-A before-and-after number is the easiest evidence to get wrong by accident. A warm cache, a debug build on one side, or work that never ran inside the timed region can each produce a convincing speedup. Before you report or act on a number, type:
+A before-and-after number is the easiest evidence to get wrong by accident. A warm cache, a debug build on one side, or work that never ran inside the timed region can each produce a convincing speedup. Before measuring, write down the decision, the size of the effect that would change it, and how much the baseline varies. To vet the result, run the checklist.
 
 ```text
 $benchmark-checklist vet the export speedup before it goes in the pr
@@ -123,11 +123,11 @@ A counterexample in model terms convinces you. The PM or designer who owns the b
 $statechart what the user sees when they edit a note offline
 ```
 
-[`$statechart`](../../skills/statechart/SKILL.md) draws a Mermaid statechart of what the user sees, generated from a TLA+ model, so the picture and the checked model can't drift apart. The reader's rules ("you never see Synced while you're offline") become invariants. Each bug TLC finds is a numbered path in the reader's words, and each state is marked works, still wrong, or fixed by your open PR. Before the hand-off, the agent reproduces each bug path in the real code, so a modeling error doesn't reach the reader as a bug.
+[`$statechart`](../../skills/statechart/SKILL.md) checks a TLA+ model with TLC and draws the result in Mermaid. Write the reader’s rules as invariants. The report gives a path to each violation and names any rules TLC could not finish checking. Replay a reported bug against the real application before presenting it as an application defect.
 
-It also runs the other way. Sketch the behavior as a chart, agree on it with the reader, and the skill writes a TLA+ skeleton from it. TLC checks the agreed chart's rules before any code exists. As guards from the real code go into the spec, each place the code departs from the chart shows up as a difference for the reader to decide.
+From the installed skill directory, run `scripts/statechart SPEC.tla --out RUN_DIR` on POSIX. On Windows, use `node scripts/statechart.ts SPEC.tla --out RUN_DIR`. Pick a new or empty output directory for each run. Read `report.md` and the TLC output there. When the model exceeds 500 states, the chart covers only counterexamples, so a passing model above that size produces a report alone.
 
-When the code already has a TLA+ spec, the skill can audit the code against it. The agent models what the code does and checks that model next to the unchanged spec. The chart marks the steps where the two differ, and each rule either one breaks is a numbered path.
+**Migrating from xstack 0.8.** Replace `from-spec` with the spec path and use `--view` for reader-facing labels. The compiler writes `report.md` in place of `stories.md` and `summary.json`. For an old `--fixed` or `--against` comparison, check both specs in separate directories and compare their reports. For a `from-chart` design, write its agreed behavior as a TLA+ spec first. To reproduce an old `--expect-broken` reachability check, keep the named invariant and inspect its counterexample. Exit status 1 means a rule broke. For an image, follow the [SVG rendering instructions](../../skills/statechart/references/render.md).
 
 ## Open the PR
 
@@ -135,7 +135,7 @@ When the code already has a TLA+ spec, the skill can audit the code against it. 
 $poteto-mode open the pr. small ordered commits, evidence in the description.
 ```
 
-The [Opening a PR playbook](../../skills/poteto-mode/playbooks/opening-a-pr.md) works from a worktree, rebases the work into small ordered commits, cleans the diff, unslops the prose, and returns the PR link. Five narrow PRs beat one fat one, and stacked follow-ups beat a growing branch. A stack is a chain of PRs. The first PR targets the repository's trunk, whatever your default branch is called, and each later PR branches from the one below it and targets that branch. Reviewers see one small change at a time, and the changes land in order, bottom first.
+The [Opening a PR playbook](../../skills/poteto-mode/playbooks/opening-a-pr.md) organizes the work into small commits, cleans the diff, and opens a PR with a short explanation and verification evidence. Independent PRs target trunk. Each dependent PR targets the branch it builds on.
 
 The playbook talks to GitHub through the `gh` CLI. If you use [Origin](https://cursor.com/docs/origin), Cursor's git host, and its `origin` CLI is installed and can resolve the repository, the playbook uses that instead. No workflow needs Graphite.
 
@@ -147,7 +147,7 @@ An open PR starts collecting blockers immediately. Checks fail, reviewers commen
 $poteto-mode babysit this pr. get it green.
 ```
 
-Babysit watches the PR, with a bundled watcher on GitHub, which runs on [Bun](https://bun.sh), or the Origin CLI when it's available, and takes blockers in order: conflicts, then review threads, then CI. Every known fix batches into one push, so the checks restart once instead of after every fix. It evaluates Bugbot comments and other review feedback against the code. A real finding gets a fix, and noise gets dismissed with the disproof posted on the thread. When all you want is status, ask smaller and Babysit answers without starting the watcher:
+Babysit checks the lowest unmerged PR first. On GitHub it uses the bundled [Bun](https://bun.sh) watcher. On Origin it uses the Origin CLI. It checks conflicts, review threads, then CI. A conflict or stale base goes to the branch owner for a rebase. For a review comment it verifies the claim against the code and replies with the fix or the evidence for dismissal. You can ask for a single status check.
 
 ```text
 $poteto-mode check on pr 123. anything outstanding?

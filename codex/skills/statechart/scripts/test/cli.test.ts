@@ -911,7 +911,18 @@ test("a view with a group in a theme color draws that color and names the group 
   assert.match(chart, new RegExp(`^ {2}class ${legend} teal$`, "m"));
 });
 
-const byX = (labels: unknown[]) => `export const state = (v) => ${JSON.stringify(labels)}[v.x];\n`;
+function writeLabelView(stateLabels: unknown[], stepLabels?: string[]) {
+  const view = writeView(
+    'import labels from "./labels.json" with { type: "json" };\n' +
+      "export const state = ({ x }) => labels.states[x];\n" +
+      "export const step = labels.steps && ((_action, _from, to) => labels.steps[to.x]);\n",
+  );
+  fs.writeFileSync(
+    path.join(path.dirname(view), "labels.json"),
+    JSON.stringify({ states: stateLabels, steps: stepLabels }),
+  );
+  return view;
+}
 
 const fanOut = (n: number) => {
   const lines = ["strict digraph DiskGraph {", '0 [label="x = 0",style = filled]'];
@@ -925,7 +936,7 @@ const fanOut = (n: number) => {
 
 test("a flat view names a label with U+0000 as written when a loop cannot take a step out of it", () => {
   const view = writeView(
-    `export const state = (v) => (v.playback === "Stopped" || v.volume === "Muted" ? ${JSON.stringify("a\0b")} : v.playback);\n`,
+    String.raw`export const state = (v) => (v.playback === "Stopped" || v.volume === "Muted" ? "a\0b" : v.playback);`,
   );
   const r = run(path.join(corpus, "MediaPlayerProps"), { view });
   assert.equal(r.status, 2);
@@ -941,7 +952,7 @@ for (const [what, c] of [
     "a parent-state view keeps a label with U+0000 apart from the parent path it spells",
     {
       base: "Counter",
-      view: byX([["a\0b"], ["a", "b"], ["c"], ["d"]]),
+      labels: [["a\0b"], ["a", "b"], ["c"], ["d"]],
       status: 0,
       states: ["ab", "a", "b", "c", "d"],
       arrows: ["a start --> b", "ab --> a: Inc", "b --> c: Inc", "c --> d: Inc"],
@@ -953,11 +964,11 @@ for (const [what, c] of [
     {
       base: "Counter",
       fanOut: 2,
-      view: byX([
+      labels: [
         { R: "f", S: "p" },
         { R: ["a\0b"], S: "q" },
         { R: ["a", "b"], S: "r" },
-      ]),
+      ],
       status: 0,
       states: ["R f", "S p", "R ab", "S q", "R a", "R b", "S r"],
       arrows: [
@@ -975,7 +986,7 @@ for (const [what, c] of [
     "a flat view with U+0001 in a label draws each arrow between the states it joins",
     {
       base: "Counter",
-      view: byX(["a\u0001b", "a", "b", "c"]),
+      labels: ["a\u0001b", "a", "b", "c"],
       status: 0,
       states: ["a\u0001b", "a", "b", "c"],
       arrows: ["a\u0001b --> a: Inc", "a --> b: Inc", "b --> c: Inc"],
@@ -986,7 +997,7 @@ for (const [what, c] of [
     "a parent-state view with U+0001 in a label draws the chart",
     {
       base: "Counter",
-      view: byX([["a\u0001b"], ["a", "b"], ["c"], ["d"]]),
+      labels: [["a\u0001b"], ["a", "b"], ["c"], ["d"]],
       status: 0,
       states: ["a\u0001b", "a", "b", "c", "d"],
       arrows: ["a start --> b", "a\u0001b --> a: Inc", "b --> c: Inc", "c --> d: Inc"],
@@ -997,12 +1008,12 @@ for (const [what, c] of [
     "a regions view with U+0001 in a label draws the chart",
     {
       base: "Counter",
-      view: byX([
+      labels: [
         { R: "a\u0001b", S: "p" },
         { R: "c", S: "p" },
         { R: "d", S: "p" },
         { R: "e", S: "p" },
-      ]),
+      ],
       status: 0,
       states: ["a\u0001b", "c", "d", "e", "p"],
       arrows: ["a\u0001b --> c: Inc", "c --> d: Inc", "d --> e: Inc"],
@@ -1013,7 +1024,7 @@ for (const [what, c] of [
     "a flat view reports a state with U+0002 in its label that breaks a rule",
     {
       base: "FirstRule",
-      view: byX(["a", "b\u0002c", "d", "e"]),
+      labels: ["a", "b\u0002c", "d", "e"],
       status: 1,
       states: ["a", "b\u0002c", "d", "e"],
       arrows: ["a --> b\u0002c: Next", "b\u0002c --> d: Next", "d --> e: Next"],
@@ -1024,7 +1035,7 @@ for (const [what, c] of [
     "a parent-state view reports a state with U+0002 in its label that breaks a rule",
     {
       base: "FirstRule",
-      view: byX([["a"], ["P", "b\u0002c"], ["d"], ["e"]]),
+      labels: [["a"], ["P", "b\u0002c"], ["d"], ["e"]],
       status: 1,
       states: ["a", "P", "b\u0002c", "d", "e"],
       arrows: ["P start --> b\u0002c", "a --> P: Next", "b\u0002c --> d: Next", "d --> e: Next"],
@@ -1035,12 +1046,12 @@ for (const [what, c] of [
     "a regions view reports a state with U+0002 in its label that breaks a rule",
     {
       base: "FirstRule",
-      view: byX([
+      labels: [
         { R: "a", S: "p" },
         { R: "b\u0002c", S: "p" },
         { R: "d", S: "p" },
         { R: "e", S: "p" },
-      ]),
+      ],
       status: 1,
       states: ["a", "b\u0002c", "d", "e", "p"],
       arrows: ["a --> b\u0002c: Next", "b\u0002c --> d: Next", "d --> e: Next"],
@@ -1052,15 +1063,14 @@ for (const [what, c] of [
     {
       base: "Counter",
       fanOut: 4,
-      view:
-        byX([
-          { R: "f", S: "p" },
-          { R: "a", S: "r" },
-          { R: "b", S: "q" },
-          { R: "X\u0003a", S: "q" },
-          { R: "X\u0003b", S: "r" },
-        ]) +
-        `export const step = (action, from, to) => (to.x <= 2 ? ${JSON.stringify("Go\u0003X")} : "Go");\n`,
+      labels: [
+        { R: "f", S: "p" },
+        { R: "a", S: "r" },
+        { R: "b", S: "q" },
+        { R: "X\u0003a", S: "q" },
+        { R: "X\u0003b", S: "r" },
+      ],
+      stepLabels: ["Go\u0003X", "Go\u0003X", "Go\u0003X", "Go", "Go"],
       status: 0,
       states: ["R f", "S p", "R a", "S r", "R b", "S q", "R X\u0003a", "S q", "R X\u0003b", "S r"],
       arrows: [
@@ -1082,7 +1092,8 @@ for (const [what, c] of [
   {
     base: string;
     fanOut?: number;
-    view: string;
+    labels: unknown[];
+    stepLabels?: string[];
     status: number;
     states: string[];
     arrows: string[];
@@ -1094,7 +1105,7 @@ for (const [what, c] of [
     const dir = width
       ? copyCase(c.base, (d) => fs.writeFileSync(path.join(d, "graph.dot"), fanOut(width)))
       : path.join(corpus, c.base);
-    const r = run(dir, { view: writeView(c.view) });
+    const r = run(dir, { view: writeLabelView(c.labels, c.stepLabels) });
     assert.equal(r.stderr, "");
     assert.equal(r.status, c.status);
     assert.deepEqual(drawn(read(path.join(r.out, "chart.mmd"))), {

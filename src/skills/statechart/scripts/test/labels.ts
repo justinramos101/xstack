@@ -363,14 +363,6 @@ const decoded = (s: string) =>
 const MARKER_END = /marker-end="url\([\d+./:=?A-Za-z-]*?#/g;
 const rewritten = (s: string) =>
   /ﬂ°|¶ß/.test(s) || s.replace(MARKER_END, 'marker-end="url(#') !== s;
-const fromSvg = (s: string) =>
-  s
-    .replace(/<\/tspan>\s*<tspan[^>]*>/g, " ")
-    .replace(/<[^>]*>/g, "")
-    .replace(/&#x([0-9a-f]+);/gi, (_, h) => fromRef(parseInt(h, 16)))
-    .replace(/&#(\d+);/g, (_, d) => fromRef(Number(d)))
-    .replace(/&(quot|lt|gt|apos|nbsp);/g, (_, n) => NAMED[n])
-    .replace(/&amp;/g, "&");
 
 type Node = { text: string; parent: string | null; group: boolean };
 
@@ -514,7 +506,7 @@ async function readMermaid(text: string, want: Want, { mermaid, html }: Tools, p
       );
 }
 
-function readPele(text: string, want: Want, render: Render, problems: string[]) {
+function readPele(text: string, want: Want, { render, html }: Tools, problems: string[]) {
   let svg: string;
   try {
     ({ svg } = render(text));
@@ -529,7 +521,7 @@ function readPele(text: string, want: Want, render: Render, problems: string[]) 
   )) {
     if (/state-(start|end)/.test(m[1])) continue;
     const t = m[3].match(/<text[^>]*>([\s\S]*?)<\/text>/);
-    drawn.set(m[2], t ? fromSvg(t[1]) : "");
+    drawn.set(m[2], t ? html(t[1]) : "");
   }
   if (drawn.size !== want.nodes.size)
     problems.push(`pele-nodes: ${drawn.size} nodes for ${want.nodes.size}`);
@@ -550,18 +542,24 @@ function readPele(text: string, want: Want, render: Render, problems: string[]) 
   )) {
     const w = want.edges[Number(m[1])];
     if (!w) problems.push(`pele-edges: Pele labels edge${m[1]}, which the chart does not have`);
-    else if (wrapped(fromSvg(m[2])) !== wrapped(w[2]))
-      problems.push(
-        `pele-text: edge${m[1]} shows ${JSON.stringify(fromSvg(m[2]))} for ${JSON.stringify(w[2])}`,
-      );
+    else {
+      const label = html(m[2]);
+      if (wrapped(label) !== wrapped(w[2]))
+        problems.push(
+          `pele-text: edge${m[1]} shows ${JSON.stringify(label)} for ${JSON.stringify(w[2])}`,
+        );
+    }
   }
   const title = svg.match(/<text class="pele-title"[^>]*>([\s\S]*?)<\/text>/);
   if (Boolean(title) !== titled(want))
     problems.push(`pele-title: Pele draws a title for ${JSON.stringify(want.title)}`);
-  else if (title && wrapped(fromSvg(title[1])) !== wrapped(want.title ?? ""))
-    problems.push(
-      `pele-text: the title shows ${JSON.stringify(fromSvg(title[1]))} for ${JSON.stringify(want.title)}`,
-    );
+  else if (title) {
+    const label = html(title[1]);
+    if (wrapped(label) !== wrapped(want.title ?? ""))
+      problems.push(
+        `pele-text: the title shows ${JSON.stringify(label)} for ${JSON.stringify(want.title)}`,
+      );
+  }
 }
 
 type Checked = { refused?: true; text?: string; problems: string[] };
@@ -595,7 +593,7 @@ async function check(c: Case, labels: string[], tools: Tools): Promise<Checked> 
   const want = expected(chart);
   const problems: string[] = [];
   await readMermaid(text, want, tools, problems);
-  readPele(text, want, tools.render, problems);
+  readPele(text, want, tools, problems);
   return { text, problems };
 }
 

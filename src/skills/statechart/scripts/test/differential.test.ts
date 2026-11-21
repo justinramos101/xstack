@@ -38,7 +38,6 @@ const NAMES = [
 const LABELS = ["a b", ...PROTOTYPE_KEYS, "Lease held, write pending", "Ünï ✓"];
 const STEPS = ["you press play", ...PROTOTYPE_KEYS, "the connect fails [while offline]"];
 const GROUPS = ["paying", "a b", ...PROTOTYPE_KEYS];
-const COLORS = ["blue", "orange", "purple", "yellow"];
 
 const INT = fc.integer({ min: -3, max: 3 }).map(String);
 const STRING = fc.constantFrom(
@@ -118,10 +117,11 @@ const MODEL = fc.record({
   ),
 });
 type Model = typeof MODEL extends fc.Arbitrary<infer M> ? M : never;
+type GeneratedView = NonNullable<Model["view"]> & { vars: string[]; actions: string[] };
 type Case = {
   module: string;
   tla: string;
-  view?: string;
+  view?: GeneratedView | "json";
   base: string[];
   invariants: string[];
   deadlock: boolean;
@@ -212,7 +212,7 @@ function caseOf(m: Model): Case {
   return {
     module: m.module,
     tla,
-    view: m.view ? viewOf(m.view, vars, actions) : undefined,
+    view: m.view ? { ...m.view, vars, actions } : undefined,
     base,
     invariants,
     deadlock: m.deadlock,
@@ -220,40 +220,19 @@ function caseOf(m: Model): Case {
   };
 }
 
-function viewOf(v: NonNullable<Model["view"]>, vars: string[], actions: string[]) {
-  const json = JSON.stringify;
-  const state = {
-    string: `pick(VARS.map((n) => v[n]), 0)`,
-    parents: `[pick(v[VARS[0]], 1), pick(VARS.map((n) => v[n]), 2)]`,
-    regions: `Object.fromEntries(${json(v.regions)}.map((r, k) => [r, pick(v[VARS[k % VARS.length]], k)]))`,
-  }[v.form];
-  const lines = [
-    `const VARS = ${json(vars)};`,
-    `const LABELS = ${json(v.labels)};`,
-    "const pick = (value, salt, from = LABELS) => {",
-    "  let h = salt;",
-    '  for (const c of JSON.stringify(value) ?? "") h = (h * 31 + c.codePointAt(0)) >>> 0;',
-    "  return from[h % from.length];",
-    "};",
-    `export const state = (v) => ${state};`,
-  ];
-  const { steps } = v;
-  if (steps) {
-    const labels = actions.map((a, k) => [a, k < steps.length ? steps[k] : a]);
-    lines.push(
-      `const STEPS = new Map(${json(labels)});`,
-      "export const step = (action) => STEPS.get(action);",
-    );
+function writeView(dir: string, view: NonNullable<Case["view"]>) {
+  const entry = path.join(dir, "view.mjs");
+  if (view === "json") {
+    fs.writeFileSync(entry, "export const state = (v) => JSON.stringify(v);\n");
+    return;
   }
-  if (v.title) lines.push(`export const title = ${json(v.title)};`);
-  if (v.groups) {
-    const colors = v.groups.map((g, k) => [g, COLORS[k]]);
-    lines.push(
-      `export const colors = Object.fromEntries(${json(colors)});`,
-      `export const group = (v) => pick(v[VARS[0]], 3, ${json(v.groups)});`,
-    );
-  }
-  return `${lines.join("\n")}\n`;
+  fs.writeFileSync(path.join(dir, "view.json"), JSON.stringify(view));
+  fs.copyFileSync(path.join(here, "differential-view.mjs"), path.join(dir, "differential-view.mjs"));
+  const exports = ['export { state } from "./differential-view.mjs";'];
+  if (view.steps) exports.push('export { step } from "./differential-view.mjs";');
+  if (view.title) exports.push('export { title } from "./differential-view.mjs";');
+  if (view.groups) exports.push('export { group, colors } from "./differential-view.mjs";');
+  fs.writeFileSync(entry, exports.join("\n"));
 }
 
 type Run = { status: number | null; stdout: string; stderr: string };
@@ -372,7 +351,7 @@ async function answer(c: Case) {
   try {
     fs.writeFileSync(path.join(dir, `${c.module}.tla`), c.tla);
     fs.writeFileSync(path.join(dir, `${c.module}.cfg`), configOf(c));
-    if (c.view !== undefined) fs.writeFileSync(path.join(dir, "view.mjs"), c.view);
+    if (c.view !== undefined) writeView(dir, c.view);
     const compile = (view: string[]) =>
       run(
         process.execPath,
@@ -512,7 +491,7 @@ for (const [what, c, says] of [
         "Spec == Init /\\ [][Next]_<<__proto__, r>>",
         "First == __proto__ = 0",
       ),
-      view: "export const state = (v) => JSON.stringify(v);\n",
+      view: "json",
       base: ["SPECIFICATION Spec"],
       invariants: ["First"],
       deadlock: false,

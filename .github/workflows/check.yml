@@ -5,7 +5,8 @@ on:
 permissions:
   contents: read
 jobs:
-  test:
+  platform:
+    name: test (${{ matrix.os }})
     strategy:
       matrix:
         os: [ubuntu-latest, windows-latest]
@@ -50,3 +51,12 @@ jobs:
       - run: bun run test && bun run typecheck
         if: runner.os == 'Linux'
         working-directory: src/skills/poteto-mode/scripts
+  test:
+    needs: platform
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Require both platform jobs to pass
+        env:
+          PLATFORM_RESULT: ${{ needs.platform.result }}
+        run: test "$PLATFORM_RESULT" = success

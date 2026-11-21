@@ -1,8 +1,8 @@
 {
   "repository": "https://github.com/cursor/plugins",
   "path": "pstack",
-  "revision": "e73df471cd4bd918367e99f3dd9c51bd53ddf5f0",
-  "version": "0.15.32",
+  "revision": "0b46ec399d55f2829e88822998f53b84944837d3",
+  "version": "0.15.46",
   "pathMapping": {
     "skills/setup-pstack": "skills/setup-xstack"
   },
@@ -71,8 +71,8 @@
     "Provider-neutral make-bot-ui",
     "Portable checked plans and bounded local verification lanes",
     "Benny runner setup replaces managed Cursor automation setup",
-    "statechart creates its mapping scaffold exclusively, so a concurrent writer's mapping is never truncated",
-    "Codex model roles preserve the existing AGENTS.md block and legacy shared config fallback",
+    "Explicit Orchestrate playbook retains the PR and commit verification ledger and recovery tools",
+    "Codex model roles retain host-specific defaults and budgets while migrating retired roles in existing configurations",
     "Codex-only rendered distribution retains the existing plugin identity and marketplace path",
     "Standalone skills include helper prompts and explicit-invocation policies",
     "Source skills own native Codex agents/openai.yaml metadata instead of translated invocation flags",

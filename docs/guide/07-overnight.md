@@ -86,7 +86,7 @@ When you're back, ask for the run in review form:
 $show-me-your-work catch me up on what you did last night
 ```
 
-Before the skill hands back its summary, it asks an independent reviewer to read the trail and transcript. It uses a different model family when available and reports any fallback. The reply ends with an Attention section listing what deserves your scrutiny. Read that section first, then the log rows it points at. You're auditing decisions, not re-reading the whole night.
+Before the skill hands back its summary, it asks an independent reviewer to read the trail and transcript. It checks whether a reviewer from another model vendor is available and discloses the review coverage. The reply ends with an Attention section listing what deserves your scrutiny. Read that section first, then the log rows it points at. You're auditing decisions, not re-reading the whole night.
 
 For a quick status instead of an audit, run [`$ketchup`](../../src/skills/ketchup/SKILL.md) in the chat that ran the work. It reads only, and tells you in plain words what changed since your last message, with the screenshots and small diagrams the work produced. Then it lists each call waiting on you, such as a merge, an approval, or a choice between options, with its pick, the evidence, and the risk, so you can decide from the reply alone.
 
@@ -94,16 +94,16 @@ For a quick status instead of an audit, run [`$ketchup`](../../src/skills/ketchu
 
 The contract above drives one task to one finish condition. Some nights hold more: a queue of independent changes, or a whole program. Three playbooks handle that.
 
-[Autopilot-full](../../src/skills/poteto-mode/playbooks/autopilot-full.md) runs a queue of independent PRs to merged. Each PR gets one owner agent that carries it from build through merge, and no owner merges on its own verdict. A swarm of fresh verifiers checks the owner's code-ready head. A later rebase or minor fix gets one fresh verifier, and only new behavior or a large new diff calls the full swarm again. Only a clean verdict on the patch that merges authorizes the merge:
+[Autopilot-full](../../src/skills/poteto-mode/playbooks/autopilot-full.md) runs a queue of independent PRs to merged. Each PR gets one owner agent that carries it from build through merge, and no owner merges on its own verdict. A swarm of fresh verifiers checks the owner's code-ready head. A later rebase or minor fix gets one fresh verifier. A wording-only edit needs green CI on the new head. New behavior or a large new diff calls the full swarm again. Only a clean verdict on the patch that merges authorizes the merge:
 
 ```text
 $poteto-mode full autopilot on this queue. each item is independent. i want them merged by morning.
 ```
 
-[Autopilot-stack](../../src/skills/poteto-mode/playbooks/autopilot-stack.md) runs the same owner loop but ships nothing. You wake up to one linear base-branch stack with a verifier's verdict on every link, and you review and land it yourself. Pick it over Autopilot-full when the changes are coupled, or when you want your own eyes on the work before anything merges:
+[Autopilot-stack](../../src/skills/poteto-mode/playbooks/autopilot-stack.md) stops when every PR is verified and green at its current head. Independent PRs can target trunk. Only a dependent PR stacks onto its parent’s branch. You decide when to land them.
 
 ```text
-$poteto-mode autopilot these five changes but stack them, don't ship. i'll land the stack in the morning.
+$poteto-mode autopilot these five changes. keep them open for me to review and land in the morning.
 ```
 
 [Orchestrate](../../src/skills/poteto-mode/playbooks/orchestrate.md) is for a program that outlives any single agent: multi-day, many stacked PRs, fleets of subagents under one standing coordinator chat. The coordinator authors briefs, collects what its subagents finish, keeps the lowest unmerged PR green, and never writes code itself. It costs more than the other playbooks, on purpose. If one agent could finish the work in a session, the playbook itself routes you back to the overnight contract above:
@@ -114,7 +114,7 @@ $poteto-mode orchestrate the store migration. own it until every package is conv
 
 ## Run many projects in parallel
 
-Give each standing body of work one coordinator session of its own. The coordinator doesn't write code. It directs subagents in isolated worktrees, or remote workers when the Codex session offers them. Confirm the remote runner's lifetime before relying on it after closing your laptop. Local work still needs its execution environment available. Start your prompts to the coordinator with `$poteto-mode`, and the subagents it spawns follow the playbooks.
+Give each standing body of work one coordinator session of its own. The coordinator doesn't write code. It directs subagents in isolated worktrees, or remote workers when the Codex session offers them. Confirm the remote runner's lifetime before relying on it after closing your laptop. Local work still needs its execution environment available. Start your prompts to the coordinator with `$poteto-mode`, and give each worker the operator’s goal, its acceptance criteria, and the shared [worker instructions](../../src/skills/poteto-mode/worker.md). A remote or replacement worker needs the same brief.
 
 A few habits help:
 

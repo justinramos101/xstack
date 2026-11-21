@@ -5,33 +5,10 @@ description: "Use for \"how does X work\", code walkthroughs before changing som
 
 # How
 
-Read [Codex runtime](../poteto-mode/references/host-runtime.md) before using Codex tools or delegating. Resolve configured roles there even when this skill is invoked directly.
+Read [Codex runtime](../poteto-mode/references/host-runtime.md) for the available delegation tools and worker instructions.
 
-Explore the codebase to answer "how does X work?" questions. Produce architectural explanations at the level of a senior engineer onboarding onto a subsystem, enough to build a working mental model, not so much that it reads like annotated source code.
+If the scope is ambiguous, state your interpretation and explore. Give one read-only subagent the user's question and this brief:
 
-Give each available agent its referenced prompt and an explicit no-writes contract. Read-only is an assignment, not a separate sandbox. Preserve any MCP read tools needed for the answer. Explorers use the `how explorer` role and every explainer uses the `how explainer` role, resolved per Codex runtime. Omit model and effort overrides when the value is `auto` or `inherit-parent`. If the session cannot run a configured model, run that subagent on the parent model and say so. Pick each subagent's effort for the job, and fast mode only when the session exposes it, per the Subagents section of the **poteto-mode** skill.
+> Trace the code from its normal entry point. Explain the architecture and runtime flow to a senior engineer who is new to this part of the system. Identify the files or symbols they need to understand it and cite the code behind your explanation.
 
-## 1. Assess complexity
-
-If the scope is ambiguous, state your interpretation and explore. The user can redirect.
-
-- **Simple** (a single module, a small utility, a narrow question such as "how does function X work"): no explorers. Spawn one explainer that explores and explains in one pass, built from `references/explainer-prompt.md` without the explorer-findings section. Go to step 4.
-- **Complex** (a subsystem spanning multiple files or services, a cross-cutting feature, a full architectural overview): go to step 2.
-
-When in doubt, take the simple path.
-
-## 2. Explore (complex only)
-
-Decompose the question into 2 to 4 angles, each a distinct slice of the subsystem. Spawn all explorers in a single message, each with `references/explorer-prompt.md` and its angle filled in.
-
-## 3. Synthesize (complex only)
-
-Once all explorers have returned, spawn one explainer with `references/explainer-prompt.md` and every explorer's findings filled in.
-
-## 4. Present
-
-Present the explainer's output. Light edits for clarity or context from the conversation are fine. Do not substantially rewrite it.
-
-## Output format
-
-The explanation uses the sections defined in `references/explainer-prompt.md`, dropping any that do not apply: Overview, Key Concepts, How It Works, Where Things Live, Gotchas.
+Use the session's inherited model. If delegation is unavailable, do the same read-only investigation directly. Present the explanation with light edits for clarity and context.

@@ -8,7 +8,7 @@ The pages, in order:
 
 1. [Set up xstack](./01-setup.md). Install the skills or plugin, check the prerequisites, and pick your models.
 2. [Route work through `$poteto-mode`](./02-poteto-mode.md). Give it a goal and watch it pick a playbook.
-3. [Understand the code](./03-understand.md). Run a read-only investigation, then `$how`, `$why`, `$teach`, and `$recall`, before you edit anything.
+3. [Understand the code](./03-understand.md). Trace behavior with `$how`, investigate decisions with `$why`, or recover the history of your own work with `$recall`.
 4. [Design the change](./04-design.md). Use `$architect`, `$arena`, `$swarm`, `$interrogate`, prototypes, and plans before code locks in a shape.
 5. [Build and clean the change](./05-build-and-clean.md). Use the build playbooks, `$tdd`, `$unslop`, and `$no-comments`.
 6. [Verify and ship](./06-verify-and-ship.md). Prove behavior on the real app, formally verify what tests rarely reach, vet numbers with `$benchmark-checklist`, then open a focused PR and drive it to merged.

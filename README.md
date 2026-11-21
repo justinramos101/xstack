@@ -8,7 +8,7 @@ xstack is a port of [pstack](https://github.com/cursor/plugins/tree/main/pstack)
 
 - **`$poteto-mode` routes the task.** Give it a task and it matches one of 23 playbooks, such as bug fix, feature, refactoring, investigation, or opening a PR. It then runs the other skills as the steps need them. The name comes from Lauren Tan's GitHub handle, poteto. The skill captures her working style, and you can [generate your own](docs/guide/09-make-it-yours.md).
 - **Skills you call directly.** `$how` and `$why` explain code and its history. `$architect`, `$arena`, and `$interrogate` design and stress-test a change. `$tdd`, `$unslop`, and `$no-comments` build and clean it. `$benchmark-checklist` vets a measured speedup or regression before you report it. `$create-formal-verification-skill` proves a key property, such as "a job never runs twice at once", in every case within a stated scope, where tests rarely reach. There are 58 skills in total.
-- **Skills that help you steer.** `$poteto-help` finds the skill, playbook, or principle that fits what you're trying to do and hands you a prompt to type. `$in-your-own-words` has the agent play back your goal and the problem before it starts. `$sharpen` aims a task at what you're really after, the way a top expert would approach it. `$ketchup` sums up what changed in a long chat since your last message, and `$ketchup-video` shows the same catch-up as a short silent video. `$correct` mines your history for mistakes you keep correcting and fixes each one where it can be enforced, such as types, lint, CI, or tests, before falling back to docs.
+- **Skills that help you steer.** `$poteto-help` finds the skill, playbook, or principle that fits what you're trying to do and hands you a prompt to type. `$in-your-own-words` has the agent play back your goal and the problem before it starts. `$sharpen` aims a task at what you're really after, the way a top expert would approach it. `$ketchup` sums up what changed in a long chat since your last message, and `$ketchup-video` shows the same catch-up as a short subtitled video. `$correct` mines your history for mistakes you keep correcting and fixes each one where it can be enforced, such as types, lint, CI, or tests, before falling back to docs.
 - **24 named principles.** Rules such as Prove It Works, Subtract Before You Add, and Explain the Number. The agent applies them on its own and you can steer it by naming one.
 - **Benny, an optional Slack bot.** It triages issue reports and tries to reproduce them. It is dormant until you [set it up](automations/benny/README.md). Installing xstack turns on no automation.
 
@@ -53,13 +53,13 @@ Most of xstack needs nothing beyond git and Codex. A few workflows need other to
 
 | You want to | You need |
 | --- | --- |
-| Open pull requests | GitHub CLI (`gh`), logged in. If the [Origin](https://cursor.com/docs/origin) CLI is installed and can resolve the repository, the PR workflows use it instead of `gh`. |
-| Babysit or ship pull requests on GitHub | `gh` plus [Bun](https://bun.sh), which runs the bundled PR watcher. On Origin the workflows call the `origin` CLI directly and need no Bun. |
+| Open pull requests | The host’s PR tools, or an authenticated GitHub CLI (`gh`) or [Origin](https://cursor.com/docs/origin) CLI for the repository. |
+| Babysit or ship pull requests | The host’s PR tools when available. The bundled GitHub watcher needs `gh` and [Bun](https://bun.sh). Origin’s CLI can watch checks directly. |
 | Run the Orchestrate playbook, a multi-day program with many stacked PRs | `gh`, or the `origin` CLI on Origin, plus Bun. Orchestrate reads the order of a PR stack by walking the PR base chain through the forge, and keeps its bookkeeping with a bundled Bun script. No workflow needs Graphite. |
 | Leave a task running overnight | Native Goal mode for ongoing work, or a scheduled task for later checks. An active-session watcher cannot resume an ended session. See [overnight work](docs/guide/07-overnight.md) for client and persistence limits. |
 | Verify a change in a UI | A way to drive the app: a browser, a native-app driver, or a CLI. `$create-verification-skill` writes one for your project. |
 | Formally verify a property | A verifier the project's developers can install, such as TLA+ for ordering bugs. `$create-formal-verification-skill` picks one and says why. |
-| Draw a behavior as a statechart | Node with npm, and network on first use. `$statechart` installs TLC and Java with [mise](https://mise.jdx.dev), about 305 MB, unless `TLA2TOOLS` and `JAVA` point at ones you have. It also fetches its chart renderer once. |
+| Check a TLA+ model and draw its statechart | On POSIX, Node 22.18–22.x or 23.6+, Bun 1.1.5+, or Deno 2+. On Windows, use supported Node. The compiler needs Java and TLC, supplied through `JAVA` and `TLA2TOOLS` or installed with [mise](https://mise.jdx.dev) on first use. [Statechart usage and migration](docs/guide/06-verify-and-ship.md#show-the-behavior-as-a-statechart). |
 | Run Benny | A Slack app, an event runner, credentials, and your explicit authorization. See the [Benny README](automations/benny/README.md). |
 
 When a bundled helper agent or model is missing, the workflow says so and uses what the Codex session offers. A missing app driver is different. UI verification then reports blocked, never a pass.
@@ -70,9 +70,12 @@ xstack tracks pstack release by release. The pinned upstream revision is in [doc
 
 ```sh
 node scripts/build.mjs
-node --test scripts/*.test.mjs
+npm ci
+npm test
 cd src/skills/poteto-mode/scripts && bun install --frozen-lockfile && bun run test && bun run typecheck
 ```
+
+For the live model-checking tests, set `TLA2TOOLS` to the pinned TLC jar and make Java available on `PATH` or through `JAVA`. CI downloads and checksums the pinned jar before running the suite.
 
 A release is a version bump in `src/plugin.json`, the only place the version lives. The build copies it into the Codex manifests, and merging the bump to `main` tags and publishes a GitHub release. [Releasing](docs/releasing.md) covers that and how to try a change before it ships.
 

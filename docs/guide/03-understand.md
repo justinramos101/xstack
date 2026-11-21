@@ -14,7 +14,7 @@ When the cause is unclear, ask for findings, not a fix:
 $poteto-mode investigate why background jobs time out every few hours. give me what we know, what data you used, and your best hypotheses. don't change any code yet.
 ```
 
-"don't change any code yet" routes this to the [Investigation playbook](../../src/skills/poteto-mode/playbooks/investigation.md). It runs `$how`, adds `$why` for questions about motivation, and returns a cited explanation. For a choice between options, it returns a recommendation with a trade-offs table. Asking "what data you used" makes the agent separate its evidence from its guesses. When the findings point at a fix, start the fix as a new task.
+"don't change any code yet" routes this to the [Investigation playbook](../../src/skills/poteto-mode/playbooks/investigation.md). It traces the code, adds `$why` for questions about motivation, and returns a cited explanation. For a choice between options, it returns a recommendation with a trade-offs table. Asking "what data you used" makes the agent separate its evidence from its guesses. When the findings point at a fix, start the fix as a new task.
 
 ## Trace behavior with `$how`
 
@@ -22,7 +22,7 @@ $poteto-mode investigate why background jobs time out every few hours. give me w
 $how do we dedupe notifications? is there an n+1 when we look up subscribers?
 ```
 
-Ask the question you have. [`$how`](../../src/skills/how/SKILL.md) reads the code and answers at the level of a senior engineer onboarding you onto the subsystem, with the runtime flow, the key types, and the non-obvious parts. For a big subsystem it fans out two to four read-only explorers first. For a narrow question it reads and explains.
+[`$how`](../../src/skills/how/SKILL.md) gives one read-only helper your question. It traces the code and explains the runtime flow, the key types, and what a senior engineer needs to know to work in that subsystem.
 
 ## Dig up history with `$why`
 
@@ -30,7 +30,7 @@ Ask the question you have. [`$how`](../../src/skills/how/SKILL.md) reads the cod
 $why was the retry limit set to five? does the reason still hold?
 ```
 
-[`$why`](../../src/skills/why/SKILL.md) starts from source control, then queries whatever evidence categories your MCPs expose, such as the issue tracker, long-form docs, team chat, observability, error tracking, and analytics, all in parallel. The report cites everything, separates direct evidence from inference, and says "appears to" when the record is thin. A null result gets reported too, because "nobody wrote down why" is itself an answer.
+[`$why`](../../src/skills/why/SKILL.md) reads the commits and PR discussions that introduced and changed the behavior. When that trail is thin, it follows the evidence into other sources. The answer cites the authors, labels inferences, and identifies questions the record leaves open.
 
 You can chain the two. `do why first then how` is a good prompt when you suspect the history explains the mess.
 

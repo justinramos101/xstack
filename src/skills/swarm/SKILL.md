@@ -20,7 +20,7 @@ Create a visible checklist with one entry per phase before launching anything. U
 
 1. State the done predicate and the artifact or report the swarm must return.
 2. Choose the shape. Partition into slices, race N workers on identical briefs, or mix both. For a race or mixed shape, declare `first pass`, `rank all`, or `best-of` before spawning.
-3. Pick the worker model from `swarm workers` per Codex runtime. For `auto` or `inherit-parent`, omit model and effort overrides so the workers run on the parent model. If the session cannot run a configured model, run those workers on the parent model and say so. For a model race, name each arm's model up front. Pick each subagent's effort for the job, and fast mode only when the session exposes it, per the Subagents section of the **poteto-mode** skill.
+3. Pick the worker model from `swarm workers` per Codex runtime. For `auto` or `inherit-parent`, omit model and effort overrides so the workers run on the parent model. If the configured model cannot run, try an available equivalent in the same family when the host permits substitution, then follow the Codex runtime fallback. Record what actually ran. For a model race, name each arm's model up front. Pick each subagent's effort for the job, and fast mode only when the session exposes it, per the Subagents section of the **poteto-mode** skill.
 4. Give each worker its own writable output when it writes. When workers verify or measure commits, each brief names the exact SHAs. A measurement brief also names the method (sample count, what one sample is, order). The worker records both in its result.
 
 ## Phase B: Fan out
@@ -29,7 +29,7 @@ Launch workers using available agents and the step 3 model, left unset for `auto
 
 Specify the exact starting branch and commit in each brief. Prepare local worktrees at that commit. For remote workers, push the authorized branch when needed and use the service's documented checkout option; verify the worker reports the expected commit before accepting its result.
 
-Every brief stands alone. Include the goal, scope, exact slice or race arm, how to verify, and what to report. Reports use `PASS`, `ISSUES`, or `BLOCKED` with evidence. A worker that can prove a defect reports `ISSUES` and lists every issue it can prove, not only the first.
+Every brief stands alone. Include the worker instructions, operator’s goal, scope, exact slice or race arm, acceptance criteria, and what to report. Reports use `PASS`, `ISSUES`, or `BLOCKED` with evidence. A worker that can prove a defect reports `ISSUES` and lists every issue it can prove, not only the first.
 
 If a worker drops out, proceed with N-1 and note it.
 

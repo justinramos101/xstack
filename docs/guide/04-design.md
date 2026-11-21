@@ -12,9 +12,9 @@ The two most common design mistakes are taking the agent's first design and poli
 $architect design the import pipeline before writing any code. i care most about how callers use it.
 ```
 
-[`$architect`](../../src/skills/architect/SKILL.md) grounds itself first, running `$how` over the code the design touches and `$why` when it moves ownership or layers. Then it runs `$arena` to produce competing design sketches, with the caller's usage written first in each, followed by types, signatures, and a module map.
+[`$architect`](../../src/skills/architect/SKILL.md) traces the systems the change touches, then sketches two designs. It weighs state ownership, how many ways callers can perform each task, and what a caller must know. Large or contested choices go to `$arena`.
 
-By default it proceeds straight from the synthesized design into implementation. If you want to see the design first, say so:
+To review the design before implementation, ask for a checkpoint.
 
 ```text
 $architect with checkpoint. stop and show me before implementing.
@@ -28,7 +28,7 @@ The design isn't sacred once code starts. If implementation shows the same worka
 $arena take my prompt to the arena verbatim. i want to compare their proposals with yours.
 ```
 
-[`$arena`](../../src/skills/arena/SKILL.md) is the general tool underneath. N subagents attempt the same design or code brief in parallel, each writing to its own worktree or directory. A read-only judge, on a different model family when your configuration allows one, scores every candidate against a rubric. The coordinator reads each candidate end to end, picks a base, grafts in the best ideas from the losers, and verifies the result.
+[`$arena`](../../src/skills/arena/SKILL.md) gives each worker the same brief in its own worktree or directory. When a judge from another model vendor is available, it scores the candidates against the rubric. The coordinator reads each candidate, selects a base, combines the strongest parts, and verifies the result. If the judge could not run, the coordinator records that in its decision.
 
 ```mermaid
 flowchart LR
@@ -36,7 +36,7 @@ flowchart LR
     B --> C[Candidate 1]
     B --> D[Candidate 2]
     B --> E[Candidate N]
-    C --> F[Cross-judge]
+    C --> F[Score candidates]
     D --> F
     E --> F
     F --> G[Pick a base]
@@ -66,9 +66,9 @@ Use it when parallelism buys coverage or lets independent checks race. `$arena` 
 $interrogate the whole branch, but skeptically. no nitpicks unless it's an actual bug or regression.
 ```
 
-[`$interrogate`](../../src/skills/interrogate/SKILL.md) sends the same diff, intent, and rubric to each reviewer on your configured panel. Model diversity is the point, so configure distinct models when the Codex session offers them. Different models have different blind spots, so a finding two models raise independently is a high-confidence finding. The lead sorts everything into `Act on`, `Consider`, `Noted`, and `Dismissed`, with a reason for each dismissal, and applies nothing automatically.
+[`$interrogate`](../../src/skills/interrogate/SKILL.md) gives each reviewer an isolated copy of the change, including uncommitted work in scope. Each reviewer tries to reproduce a failure. The lead reruns the command against the reviewed change, compares actual and expected behavior, and reports every verified finding, even if only one reviewer found it.
 
-Read the dismissals too. The lead is a pragmatic senior engineer, not an oracle, and you can override it.
+The report distinguishes reproduced failures from design judgments and explains which claims the lead dropped.
 
 ## Prototype instead of debating
 
@@ -86,7 +86,7 @@ The same idea scales up to a real design. Pair `$architect` with prototypes and 
 $poteto-mode we need rate limiting for external webhooks. $architect it first, and answer open questions with prototypes. let me review before proceeding.
 ```
 
-Don't spend reviewers on an abstract plan. `$interrogate` belongs on a diff. Point adversarial review at a plan with no code behind it and the reviewers invent theoretical risks and edge cases that will never happen. Let prototypes settle the questions, then review what got built.
+For a design review, name the question a prototype could settle. A run can show that an interface loses data. Choosing which caller should own that data may still require a design judgment.
 
 ## Write the README first for shared code
 
@@ -121,7 +121,7 @@ $poteto-mode plan the migration of our ui library to the new styling system. sma
 Not every change needs this. Most changes need none of it. From least to most scrutiny:
 
 - A small, finished change you're unsure about needs `$interrogate` alone.
-- A change that crosses function boundaries or moves ownership earns `$architect`, which brings `$arena` with it.
+- A change that crosses function boundaries or moves ownership earns `$architect`. Large or contested choices also get an `$arena` comparison.
 - A standalone decision where independent attempts would help, like naming, formats, or an algorithm, is `$arena` directly.
 - A coverage matrix, set of parallel checks, or race with declared arms is `$swarm`.
 - An open question you could answer by running something, like a layout, a timing, or an approach, gets a prototype, not a debate.

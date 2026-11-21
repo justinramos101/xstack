@@ -4,17 +4,24 @@ import { homedir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { pathToFileURL } from 'node:url';
 
-export const roles = ['feature', 'refactoring', 'bug-fix', 'perf-issue', 'hillclimb', 'judgment and prose', 'hardest tasks', 'how explorer', 'how explainer', 'why investigators', 'why synthesizer', 'reflect tooling', 'reflect judgment', 'divergent', 'synthesizer', 'arena runners', 'arena cross-judge pool', 'swarm workers', 'architect runners', 'interrogate reviewers'];
-const panels = new Set(['arena runners', 'arena cross-judge pool', 'architect runners', 'interrogate reviewers']);
+const retiredRoles = new Set(['how critics', 'how explorer', 'how explainer', 'why investigators', 'why synthesizer', 'reflect tooling', 'reflect judgment', 'divergent', 'synthesizer', 'architect runners']);
+const panels = new Set(['arena runners', 'arena cross-judge pool', 'interrogate reviewers']);
 const budgets = { unlimited: null, large: 'xhigh', medium: 'high', small: 'medium' };
-const fastRoles = ['feature', 'refactoring', 'bug-fix', 'perf-issue', 'hillclimb', 'how explorer', 'why investigators', 'reflect tooling', 'swarm workers'];
-const lineups = {
-  codex: { fast: 'gpt-6.1-sol @ xhigh', strong: 'gpt-6-astra @ xhigh' },
+const fast = 'gpt-6.1-sol @ xhigh';
+const strong = 'gpt-6-astra @ xhigh';
+const panel = `${strong}, ${fast}, ${strong}, ${fast}`;
+const judgePool = `${strong}, ${fast}`;
+export const defaults = {
+  codex: {
+    feature: fast, refactoring: fast, 'bug-fix': fast, 'perf-issue': fast, hillclimb: fast,
+    'judgment and prose': strong, 'hardest tasks': strong,
+    'arena runners': panel, 'arena cross-judge pool': judgePool,
+    'swarm workers': fast, 'interrogate reviewers': panel,
+  },
 };
-export const defaults = Object.fromEntries(Object.entries(lineups).map(([host, { fast, strong }]) => [
-  host,
-  Object.fromEntries(roles.map(role => [role, panels.has(role) ? `${strong}, ${fast}, ${strong}, ${fast}` : fastRoles.includes(role) ? fast : strong])),
-]));
+export const roles = Object.keys(defaults.codex);
+const defaultsVersion = 1;
+const unversionedJudgePool = 'gpt-6-astra @ xhigh, gpt-6.1-sol @ xhigh, gpt-6-astra @ xhigh, gpt-6.1-sol @ xhigh';
 const efforts = new Set(['low', 'medium', 'high', 'xhigh', 'max', 'ultra']);
 const START = '<!-- xstack-models:start -->';
 const END = '<!-- xstack-models:end -->';
@@ -51,11 +58,13 @@ function parseLegacyConfig(source) {
       sections[section].set('budget', budget[1]);
       continue;
     }
+    const version = line.match(/^#\s*defaults:\s*(\d+)\s*$/);
+    if (version) sections[section].set('defaults', Number(version[1]));
     if (!line.trim() || line.startsWith('#')) continue;
     const entry = line.match(/^([^:]+):\s*(.+)$/);
     if (!entry) throw new Error(`Invalid config line: ${line}`);
     for (const label of entry[1].split(',').map(x => x.trim())) {
-      if (label === 'how critics') continue;
+      if (retiredRoles.has(label)) continue;
       if (!roles.includes(label)) throw new Error(`Unknown role: ${label}`);
       sections[section].set(label, entry[2]);
     }
@@ -63,11 +72,19 @@ function parseLegacyConfig(source) {
   return sections;
 }
 
+function configFor(source, host) {
+  const sections = parseLegacyConfig(source);
+  const values = new Map([...sections.shared, ...sections[host]]);
+  if (!values.has('defaults') && values.get('arena cross-judge pool')?.trim() === unversionedJudgePool) {
+    values.set('arena cross-judge pool', defaults[host]['arena cross-judge pool']);
+  }
+  return values;
+}
+
 export function resolveRole(source, host, role) {
   checkHost(host);
   if (!roles.includes(role)) throw new Error(`Unknown role: ${role}`);
-  const sections = parseLegacyConfig(source);
-  const values = new Map([...sections.shared, ...sections[host]]);
+  const values = configFor(source, host);
   const budget = values.get('budget') ?? 'unlimited';
   const entries = (values.get(role) ?? defaults[host][role]).split(',').map(value => {
     const match = value.trim().match(/^([\w.-]+)(?:\s*@\s*([\w]+))?$/);
@@ -94,7 +111,7 @@ export function extractBlock(text) {
 // xstack's default roles for a host, as a draft setup-xstack can start from.
 export function defaultDraft(host) {
   checkHost(host);
-  return roles.map(role => `${role}: ${defaults[host][role]}`).join('\n') + '\n';
+  return [`# defaults: ${defaultsVersion}`, ...roles.map(role => `${role}: ${defaults[host][role]}`)].join('\n') + '\n';
 }
 
 // The current config for a host: its loaded file first, then the legacy shared file.
@@ -113,8 +130,7 @@ export function readConfig(host) {
 // draft are flattened for this host, and retired roles are dropped.
 export function render(host, draft) {
   checkHost(host);
-  const sections = parseLegacyConfig(draft);
-  const values = new Map([...sections.shared, ...sections[host]]);
+  const values = configFor(draft, host);
   const budget = values.get('budget') ?? 'unlimited';
   const lines = [];
   for (const role of roles) {
@@ -128,7 +144,8 @@ export function render(host, draft) {
   return [
     `# xstack model roles for ${hostNames[host]}. Written by setup-xstack; rerun it to change them.`,
     '# When a skill spawns a subagent for a role, pass the model and effort from that role\'s line. `inherit-parent` or `auto`: omit both, so the subagent runs on this session\'s model and effort.',
-    '# arena runners, architect runners, and interrogate reviewers spawn one subagent per entry. arena cross-judge pool lists alternatives for arena\'s one judge. A role with no line uses xstack\'s default, which `models.mjs <host> "<role>"` in the setup-xstack skill prints.',
+    '# arena runners and interrogate reviewers spawn one subagent per entry. arena cross-judge pool lists alternatives for arena\'s one judge, selected from another model vendor when available. A role with no line uses xstack\'s default, which `models.mjs <host> "<role>"` in the setup-xstack skill prints.',
+    `# defaults: ${defaultsVersion}`,
     `# budget: ${budget} (${cap})`,
     ...lines,
   ].join('\n') + '\n';

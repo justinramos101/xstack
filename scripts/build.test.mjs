@@ -92,7 +92,7 @@ test('bundled native metadata preserves the explicit-only skill set', () => {
     'principle-prove-it-works', 'principle-redesign-from-first-principles',
     'principle-separate-before-serializing-shared-state', 'principle-sequence-verifiable-units',
     'principle-subtract-before-you-add', 'principle-test-behavior-not-implementation',
-    'principle-type-system-discipline', 'recall', 'reflect', 'sharpen', 'show-me-your-work',
+    'principle-type-system-discipline', 'recall', 'reflect', 'reframe', 'sharpen', 'show-me-your-work',
     'statechart', 'swarm', 'tdd', 'teach', 'technical-writing', 'typescript-best-practices', 'unslop', 'why',
   ]);
   const codex = render(hosts.codex, bundled);

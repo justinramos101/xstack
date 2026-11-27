@@ -1,8 +1,8 @@
 {
   "repository": "https://github.com/cursor/plugins",
   "path": "pstack",
-  "revision": "0b46ec399d55f2829e88822998f53b84944837d3",
-  "version": "0.15.46",
+  "revision": "9e278fe4d4ecd8bfe98b1b79bf4be662efb338cc",
+  "version": "0.15.48",
   "pathMapping": {
     "skills/setup-pstack": "skills/setup-xstack"
   },
@@ -54,6 +54,7 @@
     "principle-type-system-discipline",
     "recall",
     "reflect",
+    "reframe",
     "setup-xstack",
     "sharpen",
     "show-me-your-work",

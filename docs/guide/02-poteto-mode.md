@@ -74,6 +74,14 @@ $sharpen write a migration guide for the v2 config format.
 
 The rewrite asks for the raw evidence, methods, and independent check an expert would use. It also asks the agent to prototype choices an experiment can settle and recommend an option from the result. You decide the product and preference questions. Read the rewrite, then send it when ready.
 
+When you can describe a problem but don't know what to call it, give [`$reframe`](../../src/skills/reframe/SKILL.md) your description and any relevant files.
+
+```text
+$reframe Our settings page saves some fields as I type and others when I click Save. People lose edits.
+```
+
+Reframe identifies the signs that distinguish plausible causes, teaches the vocabulary for the one that best fits, and rewrites your request. Send the rewrite directly or use `$sharpen` to add methods and a way to check the result.
+
 ## Follow up short
 
 When the conversation already carries the context, the prompt shrinks to almost nothing. All of these are enough:
